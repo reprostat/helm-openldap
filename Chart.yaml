@@ -16,15 +16,15 @@ home: https://www.openldap.org
 version: 4.3.2
 appVersion: 2.6.9
 description: Community developed LDAP software
-icon: https://raw.githubusercontent.com/jp-gouin/helm-openldap/master/logo.png
+icon: https://raw.githubusercontent.com/reprostat/helm-openldap/master/logo.png
 keywords:
   - ldap
   - openldap
   - iam-stack
   - high availability
 sources:
-  - https://github.com/jp-gouin/helm-openldap
+  - https://github.com/reprostat/helm-openldap
 maintainers:
-  - name: Jean-Philippe Gouin
-    email: jp-gouin@hotmail.fr
+  - name: Tibor Auer
+    email: tibor.auer@gmail.com
 engine: gotpl
