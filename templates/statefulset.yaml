@@ -108,7 +108,7 @@ spec:
             - sh
             - -c
             - |
-              {{- if and .Values.initTLSSecret.tls_enabled .Values.initTLSSecret.secret }}
+              {{- if and .Values.initTLSSecret.tls_enabled .Values.global.tlsSecret }}
               {{- else }}
               openssl req -x509 -newkey rsa:4096 -nodes -subj '/CN={{ .Values.global.ldapDomain }}' -keyout /tmp-certs/tls.key -out /tmp-certs/tls.crt -days 365
               chmod 777  /tmp-certs/*
@@ -332,7 +332,7 @@ spec:
 {{- if .Values.initTLSSecret.tls_enabled }}
         - name: secret-certs
           secret:
-            secretName: {{ .Values.initTLSSecret.secret }}
+            secretName: {{ .Values.global.tlsSecret }}
 {{- else }}
         - name: secret-certs
           emptyDir:

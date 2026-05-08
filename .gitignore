@@ -1,3 +1,6 @@
 myValues.yaml
+
+charts/*.tgz
+
 ignore/*
 ignore

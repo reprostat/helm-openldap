@@ -1,11 +1,9 @@
-[![build](https://github.com/jp-gouin/helm-openldap/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/jp-gouin/helm-openldap/actions/workflows/ci.yml)
-[![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/helm-openldap)](https://artifacthub.io/packages/search?repo=helm-openldap)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/apache/apisix/blob/master/LICENSE)
 ![Version](https://img.shields.io/static/v1?label=Openldap&message=2.6.9&color=blue)
 
 # OpenLDAP Helm Chart
 ## Disclaimer
-This version now use the [Bitnami Openldap](https://hub.docker.com/r/bitnami/openldap) container image.
+This version now use container image based on the [Bitnami Openldap](https://hub.docker.com/r/bitnami/openldap) container image.
 
 More detail on the container image can be found [here](https://github.com/bitnami/containers/tree/main/bitnami/openldap)
 
@@ -23,7 +21,7 @@ This chart will do the following:
 
 * Instantiate 3 instances of OpenLDAP server with multi-master replication
 * A phpldapadmin to administrate the OpenLDAP server
-* ltb-passwd for self service password
+* ltb-passwd for self service password based on the official container image
 
 **Now provide read-only feature !** [more details](#read-only)
 
@@ -32,7 +30,7 @@ This chart will do the following:
 To install the chart with the release name `my-release`:
 
 ```bash
-$ helm repo add helm-openldap https://jp-gouin.github.io/helm-openldap/
+$ helm repo add helm-openldap https://reprostat.github.io/helm-openldap/
 $ helm install my-release helm-openldap/openldap-stack-ha
 ```
 
@@ -73,8 +71,8 @@ Parameters related to the configuration of the application.
 | `userPasswords`             | User password to create (comma seprated list)                                                                                                                    | ""                  |
 | `group`                     | Group to create and add list of user above                                                                                                                       | ""                  |
 | `env`                       | List of key value pairs as env variables to be sent to the docker image. See https://github.com/bitnami/containers/tree/main/bitnami/openldap for available ones | `[see values.yaml]` |
-| `initTLSSecret.tls_enabled` | Set to enable TLS/LDAPS with custom certificate - Please also set `initTLSSecret.secret`, otherwise it will not take effect                                      | `false`             |
-| `initTLSSecret.secret`      | Secret containing TLS cert and key must contain the keys tls.key , tls.crt and ca.crt                                                                            | `""`                |
+| `initTLSSecret.tls_enabled` | Set to enable TLS/LDAPS with custom certificate - Please also set `global.tlsSecret`, otherwise it will not take effect                                      | `false`             |
+| `global.tlsSecret`          | Secret containing TLS cert and key must contain the keys tls.key , tls.crt and ca.crt                                                                            | `""`                |
 | `initialSchema`             | Schemas to initialise the 'LDAP_EXTRA_SCHEMAS' env var                                                                                                           | `"cosine,inetorgperson,nis"` |
 | `customSchemaFiles`         | Custom openldap schema files used in addition to default schemas                                                                                                 | `""`                |
 | `customLdifFiles`           | Custom openldap configuration files used to override default settings                                                                                            | `""`                |
@@ -323,10 +321,10 @@ All internal configuration like `cn=config` , `cn=module{0},cn=config` cannot be
 ## Changelog/Updating
 
 ### To 4.x 
-- Extra schema are supported (examples can be found [here](https://github.com/jp-gouin/helm-openldap/tree/master/advanced_examples) and [here](https://github.com/jp-gouin/helm-openldap/blob/master/.bin/myval.yaml)
+- Extra schema are supported (examples can be found [here](https://github.com/reprostat/helm-openldap/tree/master/advanced_examples) and [here](https://github.com/reprostat/helm-openldap/blob/master/.bin/myval.yaml)
 - Feature read-only nodes
 - TLS can be enforced for the replication
-- Use a forked version of Bitnami available [here](https://github.com/jp-gouin/openldap-container) because of this [issue](https://github.com/bitnami/containers/pull/53960)
+- Use a forked version of Bitnami available [here](https://github.com/reprostat/openldap-container) because of this [issue](https://github.com/bitnami/containers/pull/53960)
 
 ### To 4.0.0
 

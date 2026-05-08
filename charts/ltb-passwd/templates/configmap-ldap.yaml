@@ -1,17 +1,45 @@
-{{- if .Values.ldap.custom }}
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "ltb-passwd.fullname" . }}-ldap-cm
+  name: {{ include "ltb-passwd.fullname" . }}-ldap
   labels:
     app: {{ template "ltb-passwd.name" . }}
     chart: {{ template "ltb-passwd.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 data:
-  ldap.conf: |
-    {{- range $ldapconfig := .Values.ldap.custom }}
-    {{ $ldapconfig.name }} {{ $ldapconfig.value }}
+  config.php: |
+    <?php
+    $debug = {{ .Values.debug | default "false" }};
+    
+    $use_tokens = false;
+    $crypt_tokens = false;
+    $use_sms = false;
+    $crypt_answers = false;
+    
+    $ldap_url = "ldap://{{ include "global.server" . | default .Values.ldap.host }}:389";
+    {{- if .Values.ldap.starttls | default false }}
+    $ldap_starttls = true;
+    putenv("LDAPTLS_REQCERT=allow");
+    putenv("LDAPTLS_CACERT=/etc/ssl/openldap/ca.crt");
     {{- end }}
-{{- end }}
+    $ldap_binddn = "cn=admin,{{ .Values.global.ldapDomain | default .Values.ldap.baseDn }}";
+    $ldap_bindpw = getenv("LDAP_ADMIN_PASSWORD");
+    $ldap_base = "{{ .Values.ldap.searchBase }}";
+    $ldap_login_attribute = "{{ .Values.ldap.loginAttribute | default "uid" }}";
+    $ldap_filter = "(&(objectClass=posixAccount)(uid={login}))";
+    $ldap_use_ppolicy_control = true;
+    $hash = "{{ .Values.passwordPolicy.hash }}";
+    $pwd_min_length = {{ .Values.passwordPolicy.minLength }};
+    $pwd_max_length = {{ .Values.passwordPolicy.maxLength }};
+    $pwd_min_lower = {{ .Values.passwordPolicy.minLower }};
+    $pwd_min_upper = {{ .Values.passwordPolicy.minUpper }};
+    $pwd_min_digit = {{ .Values.passwordPolicy.minDigit }};
+    $pwd_min_special = {{ .Values.passwordPolicy.minSpecial }};
+    $pwd_forbidden_chars = "{{ .Values.passwordPolicy.forbiddenChars }}";
+    $pwd_no_special_at_ends = {{ .Values.passwordPolicy.noSpecialAtEnds }};
+    $use_pwnedpasswords = {{ .Values.passwordPolicy.usePwnedPasswords }};
+    $pwd_no_reuse = {{ .Values.passwordPolicy.noReuse }};
+    $pwd_show_policy = "{{ .Values.passwordPolicy.showPolicy }}";
+    $pwd_show_policy_pos = "above";
+    ?>

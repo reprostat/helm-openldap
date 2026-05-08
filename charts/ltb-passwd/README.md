@@ -3,9 +3,9 @@
 This repository contains the helm chart for the LTB password change webapp.
 It is based on several other projects, namely:
 
-- [LTB Self-Service Password](https://ltb-project.org/documentation/self-service-password)
+- [LTB Self-Service Password](https://self-service-password.readthedocs.io/en/latest/)
 - [LTB Self-Service Password Github Repo](https://github.com/ltb-project/self-service-password)
-- [tiredofit Docker Image for the LTB repo](https://github.com/tiredofit/docker-self-service-password)
+- [LTB Self-Service Password Docker Image](https://hub.docker.com/r/ltbproject/self-service-password)
 
 ## Prerequisites
 
@@ -27,10 +27,6 @@ $ helm install --name my-release $PATH_TO_THIS_REPO
 
 ## Configuration
 
-We use this image as base image, please refer to the documentation for specific options.
-
-- [tiredofit Docker Image for the LTB repo](https://github.com/tiredofit/docker-self-service-password)
-
 Configuration is done within `values.yaml`:
 
 | Parameter                          | Description                                                                                                                               | Default                            |
@@ -39,7 +35,6 @@ Configuration is done within `values.yaml`:
 | `ldap.bindDN`                      | bindDN to authenticate on LDAP. Optional. Default to cn=admin,dc=...                                                                      | ` `                                |
 | `ldap.passkey`                     | key of credential secret to authenticate on LDAP. Optional. Default to LDAP_ADMIN_PASSWORD                                                | ` `                                |
 | `ldap.searchBase`                  | LDAP Search base for users. Default to dc=...                                                                                             | ` `                                |
-| `ldap.custom`                      | LDAP client custom configuration                                                                                                          | ` `                                |
 | `replicaCount`                     | Number of replicas                                                                                                                        | `1`                                |
 | `image.repository`                 | Container image repository                                                                                                                | ` tiredofit/self-service-password` |
 | `image.tag`                        | Container image tag                                                                                                                       | `latest`                           |

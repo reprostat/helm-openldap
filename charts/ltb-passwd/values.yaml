@@ -5,14 +5,39 @@
 replicaCount: 1
 
 image:
-  repository: tiredofit/self-service-password
-  tag: 5.3.1
-  pullPolicy: Always
+  repository: ltbproject/self-service-password
+  tag: 1.7.3
+  pullPolicy: IfNotPresent
   pullSecrets: []
 
 
 nameOverride: ""
 fullnameOverride: ""
+
+debug: "false"
+
+ldap:
+  host: localhost
+  baseDn: dc=example,dc=com
+  searchBase: "dc=example,dc=com"
+  starttls: false
+  tlsSecretName: ldap-tls
+  bindDnSecretName: ldap-bind # Secret containing the password for the bind DN as LDAP_ADMIN_PASSWORD
+  loginAttribute: uid
+
+passwordPolicy:
+  hash: auto
+  minLength: 8
+  maxLength: 32
+  minLower: 0
+  minUpper: 0
+  minDigit: 0
+  minSpecial: 0
+  forbiddenChars: "$"
+  noSpecialAtEnds: false
+  usePwnedPasswords: false
+  noReuse: false
+  showPolicy: never
 
 service:
   type: ClusterIP
@@ -50,25 +75,13 @@ volumes: []
 #  - name: xxxxx
 #    emptyDir: {}
 resources: {}
+#  limits:
+#    cpu: 100m
+#    memory: 64Mi
+#  requests:
+#    cpu: 50m
+#    memory: 32Mi
 nodeSelector: {}
 tolerations: []
 affinity: {}
-ldap:
-  custom:
-    - name: TLS_REQCERT
-      value: never
-  # if you want to restrict search base tree for users instead of complete domain
-  # searchBase: "ou=....,dc=mydomain,dc=com"
-  # if you want to use a dedicated bindDN for the search with less permissions instead of cn=admin one
-  # bindDN: "cn=....,dc=mydomain,dc=com"
-  # if you want to use a specific key of the credentials secret instead of the default one (LDAP_ADMIN_PASSWORD)
-  # passKey: LDAP_MY_KEY
-env:
-- name: SECRETKEY
-  value: "password"
-- name: LDAP_LOGIN_ATTRIBUTE
-  value: "cn"
-- name: LDAP_STARTTLS
-  value: "false"
-- name: CHANGE_SSHKEY
-  value: "true"
+  

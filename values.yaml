@@ -12,8 +12,7 @@ global:
   ##   - myRegistryKeySecretName
   ##
   #imagePullSecrets: [""]
-  ## ldapDomain , can be explicit (e.g dc=toto,c=ca) or domain based (e.g example.com)
-  ldapDomain: "example.org"
+  ldapDomain: "dc=toto,dc=ca"
   # Specifies an existing secret to be used for admin and config user passwords. The expected key are LDAP_ADMIN_PASSWORD and LDAP_CONFIG_ADMIN_PASSWORD.
   # existingSecret: ""
   ## Default Passwords to use, stored as a secret. Not used if existingSecret is set.
@@ -58,8 +57,8 @@ image:
   #repository: bitnami/openldap
   #tag: 2.6.3
   # Temporary fix
-  repository: jpgouin/openldap
-  tag: 2.6.9-fix
+  repository: reprostat/openldap
+  tag: "2.6.13"
   pullPolicy: Always
   pullSecrets: []
 
@@ -567,8 +566,6 @@ test:
 # For more parameters check following file: ./charts/ltb-passwd/values.yaml
 ltb-passwd:
   enabled : true
-  image:
-    tag: 5.2.3
   ingress:
     enabled: true
     annotations: {}
@@ -585,12 +582,13 @@ ltb-passwd:
     #   hosts:
     #   - ssl-ldap2.example
   # ldap:
-    # if you want to restrict search base tree for users instead of complete domain
-    # searchBase: "ou=....,dc=mydomain,dc=com"
-    # if you want to use a dedicated bindDN for the search with less permissions instead of cn=admin one
-    # bindDN: "cn=....,dc=mydomain,dc=com"
-    # if you want to use a specific key of the credentials secret instead of the default one (LDAP_ADMIN_PASSWORD)
-    # passKey: LDAP_MY_KEY
+  #   starttls: true
+  #   searchBase: "dc=example,dc=com"
+  # passwordPolicy:
+  #   hash: auto
+  #   minLength: 16
+  #   maxLength: 32
+  #   showPolicy: onerror
 
 ## phpldapadmin
 ## For more parameters check following file: ./charts/phpldapadmin/values.yaml
