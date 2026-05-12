@@ -1,5 +1,17 @@
 apiVersion: v2
-appVersion: "1.3"
-description: LTB Project Password self service
 name: ltb-passwd
-version: 0.1.0
+home: https://self-service-password.readthedocs.io
+version: 1.0.0
+appVersion: "1.7.3"
+description: LDAP Tool Box Self Service Password
+keywords:
+  - ldap
+  - openldap
+  - iam-stack
+  - self-service
+sources:
+  - https://github.com/reprostat/helm-openldap/tree/master/charts/ltb-passwd
+  - https://github.com/ltb-project/self-service-password/tree/master/packaging/docker
+maintainers:
+  - name: Tibor Auer
+    email: tibor.auer@gmail.com
