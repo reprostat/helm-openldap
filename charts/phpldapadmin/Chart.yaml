@@ -1,14 +1,18 @@
+apiVersion: v2
 name: phpldapadmin
-version: 0.1.2
-appVersion: 0.7.1
-description: Web-based LDAP browser to manage your LDAP server
+home: http://phpldapadmin.org
+version: 1.0.0
+appVersion: 2.3.10
+description: Web based LDAP administration tool
 keywords:
-  - phpldapadmin
+  - ldap
   - openldap
-  - userrights
-home: http://phpldapadmin.sourceforge.net
-icon: http://phpldapadmin.sourceforge.net/wiki/images/d/d4/Logo.jpg
-source:
-- https://gitlab.v2.rancher.geohub.space/g3s/i3s/i3s-helm-catalog
+  - iam-stack
+  - administration
+icon: https://raw.githubusercontent.com/leenooks/phpLDAPadmin/master/public/images/logo.png
+sources:
+  - https://github.com/reprostat/helm-openldap/tree/master/charts/phpldapadmin
+  - https://github.com/leenooks/phpLDAPadmin/tree/master/docker
 maintainers:
-- name: Jean-Philippe Gouin
+  - name: Tibor Auer
+    email: tibor.auer@gmail.com

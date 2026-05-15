@@ -11,5 +11,13 @@ metadata:
 {{ toYaml .Values.extraLabels | indent 4 }}
 {{- end }}
 data:
-{{ toYaml .Values.env | indent 2 }}
-  PHPLDAPADMIN_LDAP_HOSTS: "#PYTHON2BASH:[{ '{{ template "global.server" . }}'  : [{'server': [{'tls': True},{'port':{{ .Values.global.ldapPort }}}]},{'login': [{'bind_id': '{{ template "global.bindDN" . }}'  }]}]}]"
+  APP_DEBUG: "{{ if .Values.debug }}true{{ else }}false{{ end }}"
+  LDAP_HOST: {{ include "global.server" . | default .Values.ldap.host }}
+  LDAP_CONNECTION: "{{ if .Values.ldap.starttls }}starttls{{ else }}plain{{ end }}"
+  LDAP_BASE_DN: {{ .Values.global.ldapDomain | default .Values.ldap.baseDn }}
+  LDAP_LOGIN_ATTR: {{ .Values.ldap.loginAttribute | default "dn" }}
+  LDAP_LOGIN_ATTR_DESC: {{ .Values.ldap.loginAttributeDesc | default "Distinguished Name (DN)" }}
+  LDAP_LOGIN_OBJECTCLASS: {{ .Values.ldap.loginObjectClass | default "inetOrgPerson,posixAccount" }}
+  LDAP_ALLOW_GUEST: "{{ if .Values.ldap.allowGuest }}true{{ else }}false{{ end }}"
+  LDAP_USERNAME: "cn=admin,{{ .Values.global.ldapDomain | default .Values.ldap.baseDn }}"
+  

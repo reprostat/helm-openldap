@@ -34,11 +34,17 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
         - name: http
-          containerPort: 80
+          containerPort: 8080
           protocol: TCP
         envFrom:
         - configMapRef:
             name: {{ template "phpldapadmin.fullname" . }}
+        env:
+        - name: LDAP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.existingSecret | default .Values.ldap.bindDnSecretName }}
+              key: LDAP_ADMIN_PASSWORD
         {{- if .Values.volumeMounts }}
         volumeMounts:
           {{- toYaml .Values.volumeMounts | nindent 8 }}

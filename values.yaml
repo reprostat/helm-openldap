@@ -566,6 +566,9 @@ test:
 # For more parameters check following file: ./charts/ltb-passwd/values.yaml
 ltb-passwd:
   enabled : true
+  ldap:
+    searchBase: "dc=example,dc=com"
+    starttls: false
   ingress:
     enabled: true
     annotations: {}
@@ -594,10 +597,9 @@ ltb-passwd:
 ## For more parameters check following file: ./charts/phpldapadmin/values.yaml
 phpldapadmin:
   enabled: true
-  image:
-    tag: 0.9.0
-  env:
-    PHPLDAPADMIN_LDAP_CLIENT_TLS_REQCERT: "never"
+  ldap:
+    starttls: false
+    allowGuest: false
   ingress:
     enabled: true
     annotations: {}

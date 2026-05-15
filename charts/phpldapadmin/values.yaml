@@ -1,28 +1,29 @@
 ---
 # Default values for phpldapadmin.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
 
-env:
-  # PHPLDAPADMIN_LDAP_HOSTS: ...
-  PHPLDAPADMIN_HTTPS: "false"
-  PHPLDAPADMIN_TRUST_PROXY_SSL: "true"
-
-## Number of phpLDAPadmin images
-replicaCount: 1
+debug: false
 
 ## Set default image, imageTag, and imagePullPolicy. mode is used to indicate the
 ##
 image:
-  repository: osixia/phpldapadmin
-  tag: 0.9.0
+  repository: phpldapadmin/phpldapadmin
+  tag: 2.3.10
   pullPolicy: IfNotPresent
   pullSecrets: []
 
+## Number of phpLDAPadmin images
+replicaCount: 1
 
-## Enable persistence using Persistent Volume Claims
-## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
-##
+ldap:
+  host: localhost
+  baseDn: dc=example,dc=com
+  starttls: false
+  tlsSecretName: ldap-tls
+  bindDnSecretName: ldap-bind # Secret containing the password for the bind DN as LDAP_ADMIN_PASSWORD
+  loginAttribute: dn
+  loginAttributeDesc: "Distinguished Name (DN)"
+  loginObjectClass: "inetOrgPerson"
+  allowGuest: false
 
 # -- Init containers to add to the pod
 ## Note: Supports use of custom Helm templates
@@ -38,7 +39,6 @@ volumeMounts: []
 volumes: []
 #  - name: xxxxx
 #    emptyDir: {}
-
 
 ## Expose the pgAdmin service to be accessed from outside the cluster (LoadBalancer service).
 ## or access it from within the cluster (ClusterIP service). Set the service type and the port to serve it.
@@ -79,18 +79,6 @@ ingress:
   #   hosts:
   #   - phpldapadmin.example.org
 
-## Configure liveness and readiness probes
-## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
-##
-readinessProbe:
-  httpGet:
-    path: /
-    port: http
-livenessProbe:
-   httpGet:
-     path: /
-     port: http
-
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -98,9 +86,9 @@ resources: {}
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   # limits:
   #  cpu: 100m
-  #  memory: 128Mi
+  #  memory: 192Mi
   # requests:
-  #  cpu: 100m
+  #  cpu: 50m
   #  memory: 128Mi
 
 nodeSelector: {}
