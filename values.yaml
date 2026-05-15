@@ -12,7 +12,7 @@ global:
   ##   - myRegistryKeySecretName
   ##
   #imagePullSecrets: [""]
-  ldapDomain: "dc=toto,dc=ca"
+  ldapDomain: "dc=example,dc=org"
   # Specifies an existing secret to be used for admin and config user passwords. The expected key are LDAP_ADMIN_PASSWORD and LDAP_CONFIG_ADMIN_PASSWORD.
   # existingSecret: ""
   ## Default Passwords to use, stored as a secret. Not used if existingSecret is set.
