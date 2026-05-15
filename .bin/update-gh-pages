@@ -16,6 +16,7 @@ build_dir="dist"
 
 cd "$GITHUB_WORKSPACE"
 
+helm dependency update
 helm package --destination ../ .
 
 git config user.name "$GITHUB_ACTOR"

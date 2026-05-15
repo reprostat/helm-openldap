@@ -26,4 +26,3 @@ sources:
 maintainers:
   - name: Tibor Auer
     email: tibor.auer@gmail.com
-engine: gotpl    
