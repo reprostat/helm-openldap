@@ -11,7 +11,7 @@ keywords:
   - administration
 icon: https://raw.githubusercontent.com/leenooks/phpLDAPadmin/master/public/images/logo.png
 sources:
-  - https://github.com/reprostat/helm-openldap/tree/master/charts/phpldapadmin
+  - https://github.com/reprostat/helm-openldap/tree/main/charts/phpldapadmin
   - https://github.com/leenooks/phpLDAPadmin/tree/master/docker
 maintainers:
   - name: Tibor Auer

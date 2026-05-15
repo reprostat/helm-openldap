@@ -10,7 +10,7 @@ keywords:
   - iam-stack
   - self-service
 sources:
-  - https://github.com/reprostat/helm-openldap/tree/master/charts/ltb-passwd
+  - https://github.com/reprostat/helm-openldap/tree/main/charts/ltb-passwd
   - https://github.com/ltb-project/self-service-password/tree/master/packaging/docker
 maintainers:
   - name: Tibor Auer

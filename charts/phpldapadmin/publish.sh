@@ -69,8 +69,8 @@ helm package -d "$HELM_CHART" "$HELM_CHARTS_SOURCE"
 echo '>>> helm repo index'
 helm repo index .
 
-if [ "$CIRCLE_BRANCH" != "master" ]; then
-  echo "Current branch is not master and do not publish"
+if [ "$CIRCLE_BRANCH" != "main" ]; then
+  echo "Current branch is not main and do not publish"
   exit 0
 fi
 

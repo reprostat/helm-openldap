@@ -321,7 +321,7 @@ All internal configuration like `cn=config` , `cn=module{0},cn=config` cannot be
 ## Changelog/Updating
 
 ### To 4.x 
-- Extra schema are supported (examples can be found [here](https://github.com/reprostat/helm-openldap/tree/master/advanced_examples) and [here](https://github.com/reprostat/helm-openldap/blob/master/.bin/myval.yaml)
+- Extra schema are supported (examples can be found [here](https://github.com/reprostat/helm-openldap/tree/main/advanced_examples) and [here](https://github.com/reprostat/helm-openldap/blob/main/.bin/myval.yaml)
 - Feature read-only nodes
 - TLS can be enforced for the replication
 - Use a forked version of Bitnami available [here](https://github.com/reprostat/openldap-container) because of this [issue](https://github.com/bitnami/containers/pull/53960)
