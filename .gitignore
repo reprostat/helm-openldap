@@ -1,6 +1,5 @@
-myValues.yaml
+ignore/*
+ignoremyValues.yaml
 
 charts/*.tgz
-
-ignore/*
-ignore
+Chart.lock
