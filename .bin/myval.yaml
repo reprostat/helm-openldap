@@ -1,5 +1,6 @@
 global:
   configUser: "adminConfig"
+  tlsSecret: "custom-cert"
 logLevel: debug
 resources: 
   limits:
@@ -11,6 +12,8 @@ ltb-passwd:
     hosts:
     - "ssl-ldap2.example"
 phpldapadmin:
+  ldap:
+    allowGuest: true
   ingress:
     hosts:
     - "phpldapadmin.example"
@@ -102,9 +105,3 @@ service:
   type: NodePort
 initTLSSecret:
   tls_enabled: true
-  image:
-    registry: docker.io
-    repository: alpine/openssl
-    tag: latest
-    pullPolicy: IfNotPresent
-  secret: "custom-cert" 
