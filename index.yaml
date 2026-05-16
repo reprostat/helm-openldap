@@ -6,7 +6,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 2.30.2
-    created: "2026-05-15T16:23:35.690196253Z"
+    created: "2026-05-16T08:18:51.342775429Z"
     description: A Library Helm Chart for grouping common logic between bitnami charts.
       This chart is not deployable by itself.
     digest: 37adbe3f259e25f54da4703671149957f08dcf7897088475e42a6ede646cd67e
@@ -31,7 +31,7 @@ entries:
   openldap-stack-ha:
   - apiVersion: v2
     appVersion: 2.6.13
-    created: "2026-05-15T16:23:35.689418106Z"
+    created: "2026-05-16T08:18:51.342067617Z"
     dependencies:
     - condition: ltb-passwd.enabled
       name: ltb-passwd
@@ -45,7 +45,7 @@ entries:
       repository: oci://registry-1.docker.io/bitnamicharts
       version: 2.30.x
     description: Community developed LDAP software
-    digest: 44ef178dd12547665f7b76421a78354dfb4e4489e2b9cef47bfbf8ca2e2eca4c
+    digest: 1bef5ab332d3501baba3e7d7bbaca1155bff12f9d95906ebd3bcb5042bd55149
     home: https://www.openldap.org
     icon: https://raw.githubusercontent.com/reprostat/helm-openldap/main/logo.png
     keywords:
@@ -63,4 +63,4 @@ entries:
     urls:
     - openldap-stack-ha-4.4.0.tgz
     version: 4.4.0
-generated: "2026-05-15T16:23:35.685605018Z"
+generated: "2026-05-16T08:18:51.338299478Z"
