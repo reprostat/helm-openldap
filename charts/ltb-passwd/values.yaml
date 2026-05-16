@@ -37,7 +37,7 @@ passwordPolicy:
   noSpecialAtEnds: false
   usePwnedPasswords: false
   noReuse: false
-  showPolicy: never
+  showPolicy: never # Options: always, onerror, never
 
 service:
   type: ClusterIP

@@ -22,6 +22,8 @@ global:
   configPassword: Not@SecurePassw0rd
   ldapPort: 389
   sslLdapPort: 636
+  # The name of a kubernetes.io/tls type secret to use for TLS
+  tlsSecret: "" 
 
 ## @section Common parameters
 
@@ -461,8 +463,6 @@ initTLSSecret:
     ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
     ##
     pullPolicy: IfNotPresent
-  # The name of a kubernetes.io/tls type secret to use for TLS
-  secret: "" 
   ## init-tls-secret container's resource requests and limits
   ## ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
   ## @param initTlsSecret.resources.limits The resources limits for the init container
