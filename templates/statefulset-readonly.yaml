@@ -101,7 +101,7 @@ spec:
             - |
               {{- if and .Values.initTLSSecret.tls_enabled .Values.global.tlsSecret }}
               {{- else }}
-              openssl req -x509 -newkey rsa:4096 -nodes -subj '/CN={{ .Values.global.ldapDomain }}' -keyout /tmp-certs/tls.key -out /tmp-certs/tls.crt -days 365
+              openssl req -x509 -newkey rsa:4096 -nodes -subj '/CN={{ include "global.baseDomain" . }}' -keyout /tmp-certs/tls.key -out /tmp-certs/tls.crt -days 365
               chmod 777  /tmp-certs/*
               {{- end }}
               cp -Lr /tmp-certs/* /certs

@@ -23,7 +23,7 @@ data:
     putenv("LDAPTLS_REQCERT=allow");
     putenv("LDAPTLS_CACERT=/etc/ssl/openldap/ca.crt");
     {{- end }}
-    $ldap_binddn = "cn=admin,{{ .Values.global.ldapDomain | default .Values.ldap.baseDn }}";
+    $ldap_binddn = "cn=admin,{{ (include "global.baseDomain" .) | default .Values.ldap.baseDn }}";
     $ldap_bindpw = getenv("LDAP_ADMIN_PASSWORD");
     $ldap_base = "{{ .Values.ldap.searchBase }}";
     $ldap_login_attribute = "{{ .Values.ldap.loginAttribute | default "uid" }}";
