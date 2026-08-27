@@ -17,19 +17,22 @@ metadata:
 {{ toYaml .Values.extraLabels | indent 4 }}
 {{- end }}
 data:
-  LDAP_ROOT: {{ include "global.baseDomain" . }}
-  {{- if .Values.users }}
-  LDAP_USERS: {{ .Values.users }}
-  {{- end }}
-  {{- if .Values.userPasswords }}
-  LDAP_PASSWORDS: "{{ .Values.userPasswords }}"
-  {{- end }}
-  {{- if .Values.group }}
-  LDAP_GROUP: {{ .Values.group }}
-  {{- end }}
-  LDAP_TLS_CERT_FILE: /opt/bitnami/openldap/certs/tls.crt
-  LDAP_TLS_KEY_FILE: /opt/bitnami/openldap/certs/tls.key
-  LDAP_TLS_CA_FILE: /opt/bitnami/openldap/certs/ca.crt
-  LDAP_CONFIG_ADMIN_ENABLED: "yes"
-  LDAP_CONFIG_ADMIN_USERNAME: "{{ .Values.global.configUser }}"
+  LDAP_LOG_LEVELS: {{ .Values.logging.logLevel }}
+  INIT_SH_FILE: /opt/init.sh
+  LDAP_INIT_ORG_DN: {{ include "global.baseDomain" . }}
+  LDAP_INIT_ORG_NAME: Ion-DRI
+  LDAP_INIT_ADMIN_GROUP_DN: {{ .Values.adminGroupSubDN }},{{ include "global.baseDomain" . }}
+  LDAP_INIT_PASSWORD_RESET_GROUP_DN: {{ .Values.adminGroupSubDN }},{{ include "global.baseDomain" . }}
+  LDAP_INIT_ROOT_USER_DN: cn=admin,{{ include "global.baseDomain" . }}
+  LDAP_INIT_ALLOW_CONFIG_ACCESS: "{{ .Values.global.allowConfigAccess }}" # required for configuring accesslog
+  LDAP_INIT_ALLOW_ANONYMOUS_ROOT_DSE: "{{ .Values.global.allowAnonymousAccess }}"
+  LDAP_INIT_RFC2307BIS_SCHEMA: {{ .Values.useRfc2307bisSchema | ternary 1 0 }}
+  LDAP_INIT_PPOLICY_DEFAULT_DN: cn=default,{{ .Values.passwordPolicy.groupSubDN }},{{ include "global.baseDomain" . }}
+  LDAP_PPOLICY_PPM_CONFIG: |-
+    {{- .Values.passwordPolicy.configPPM | nindent 4 }}
+  LDAP_BACKUP_TIME: {{ .Values.backup.schedule }}
+  LDAP_BACKUP_FILE: {{ .Values.backup.file }}
+  LDAPTLS_CACERT: /etc/ldap/certs/ca.crt
+{{- if .Values.env }}
 {{ toYaml .Values.env | indent 2 }}
+{{- end }}

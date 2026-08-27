@@ -1,0 +1,33 @@
+{{- if or (gt (int .Values.replication.writeableReplicaCount) 1) .Values.accessLog.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "openldap.fullname" . }}-script
+  labels:
+    app: {{ template "openldap.name" . }}
+    chart: {{ template "openldap.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- if .Values.extraLabels }}
+{{ toYaml .Values.extraLabels | indent 4 }}
+{{- end }}
+data:
+  init.sh: |
+{{- if (gt (int .Values.replication.writeableReplicaCount) 1) }}
+    # Configure Mirror Node Replication
+    export LDAP_INIT_REPLICATION_SERVERID=$(($(hostname | grep -oP '(?<={{ template "openldap.fullname" . }}-)\d+')+1))
+    if [[ "$LDAP_INIT_REPLICATION_SERVERID" < "$LDAP_INIT_REPLICATION_NUMBER" ]]; then
+        export LDAP_INIT_REPLICATION_PROVIDER="ldaps://{{ template "openldap.fullname" . }}-${LDAP_INIT_REPLICATION_SERVERID}.{{ template "openldap.fullname" . }}-headless.{{ template "openldap.fullname" . }}.svc.cluster.local"
+    else
+        export LDAP_INIT_REPLICATION_PROVIDER="ldaps://{{ template "openldap.fullname" . }}-0.{{ template "openldap.fullname" . }}-headless.{{ template "openldap.fullname" . }}.svc.cluster.local"
+    fi
+    export LDAP_INIT_REPLICATION_BIND_PWD=$(</run/secrets/ldap-replication-password)
+    cp -pf /opt/init/config/init_replication.ldif /opt/ldifs/init_replication_provider_config.ldif
+    cp -pf /opt/init/config/init_replication_acl.ldif /opt/ldifs/init_config_admin_access.ldif
+{{- end }}
+
+{{- if .Values.accessLog.enabled }}
+    # Accesslog Configuration
+    mkdir -p "$LDAP_INIT_ACCESSLOG_DATA_DIR"
+{{- end }}
+{{- end }}

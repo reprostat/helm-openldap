@@ -1,0 +1,156 @@
+{{- if (gt (int .Values.replication.writeableReplicaCount) 1) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "openldap.fullname" . }}-replication
+  labels:
+    app: {{ template "openldap.name" . }}
+    chart: {{ template "openldap.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- if .Values.extraLabels }}
+{{ toYaml .Values.extraLabels | indent 4 }}
+{{- end }}
+data:
+  init_replication.ldif: |
+    dn: cn=config
+    changetype: modify
+    add: olcServerID
+    olcServerID: ${LDAP_INIT_REPLICATION_SERVERID}
+
+    dn: cn=module{0},cn=config
+    changetype: modify
+    add: olcModuleLoad
+    olcModuleLoad: syncprov
+
+    # Replicating config database
+
+    dn: olcOverlay=syncprov,olcDatabase={0}config,cn=config
+    objectClass: olcOverlayConfig
+    objectClass: olcSyncProvConfig
+    olcOverlay: syncprov
+
+    # Adding olcSyncrepl is deliberately the final online-config operation because
+    # slapd may schedule the engine as soon as this record commits. All settings
+    # needed by the initial refresh must already be active at that point.
+    dn: olcDatabase={0}config,cn=config
+    changetype: modify
+    add: olcSyncrepl
+    # Global TLS attributes are applied later in this startup. Supplying the CA here
+    # lets syncrepl verify the provider immediately, including during initialization.
+    # The retry schedule also covers the normal race where both containers start at once.
+    # memberOf is derived locally by the consumer overlay; accepting the provider's
+    # copy as well can leave stale backlinks. reqcert validates trust, while reqsan
+    # prevents a trusted certificate from falling back to a non-matching identity.
+    olcSyncrepl:
+        rid=101
+        provider=${LDAP_INIT_REPLICATION_PROVIDER}
+        bindmethod=simple
+        binddn="${LDAP_INIT_REPLICATION_BIND_DN}"
+        credentials="${LDAP_INIT_REPLICATION_BIND_PWD}"
+        searchbase="cn=config"
+        exattrs="olcServerID,olcSyncrepl"
+        type=refreshAndPersist
+        retry="5 5 60 +"
+        timeout=5
+        tls_cacert=/etc/ldap/certs/ca.crt
+        tls_reqcert=demand
+        tls_reqsan=demand
+    -
+    add: olcMultiProvider
+    olcMultiProvider: TRUE
+
+    # Replicating domain database
+
+    dn: olcOverlay=syncprov,olcDatabase={1}mdb,cn=config
+    objectClass: olcOverlayConfig
+    objectClass: olcSyncProvConfig
+    olcOverlay: syncprov
+    # Persist contextCSN often enough to bound unclean-restart recovery. A session
+    # log is omitted because its useful in-memory size depends on write rate and
+    # reconnect duration, and the log is lost on provider restart.
+    # NOTE: Reconnects can scan the full suffix; add a measured olcSpSessionlog
+    # value when that cost becomes material.
+    olcSpCheckpoint: 100 10
+
+    dn: olcDatabase={1}mdb,cn=config
+    changetype: modify
+    # Syncrepl searches these operational attributes during refreshes. Keep their
+    # write/storage cost out of servers that have no replication role.
+    add: olcDbIndex
+    olcDbIndex: entryCSN,entryUUID eq
+
+    # init_module_memberof.ldif installs memberof before every other database overlay,
+    # so its generated ordered config DN is stable at {0} during first initialization.
+    dn: olcOverlay={0}memberof,olcDatabase={1}mdb,cn=config
+    changetype: modify
+    # memberof's internal refint mode is incompatible with addcheck. Standalone
+    # refint stays active because its internal repairs are not replicated; each
+    # replica must maintain its configured DN-valued attributes locally.
+    replace: olcMemberOfRefInt
+    olcMemberOfRefInt: FALSE
+    -
+    # Initial refresh order is not guaranteed. If a group arrives before its member,
+    # addcheck lets the later member entry acquire the backlink that was missed.
+    replace: olcMemberOfAddCheck
+    olcMemberOfAddCheck: TRUE
+
+    # Adding olcSyncrepl is deliberately the final online-config operation because
+    # slapd may schedule the engine as soon as this record commits. All settings
+    # needed by the initial refresh must already be active at that point.
+    dn: olcDatabase={1}mdb,cn=config
+    changetype: modify
+    add: olcSyncrepl
+    # Global TLS attributes are applied later in this startup. Supplying the CA here
+    # lets syncrepl verify the provider immediately, including during initialization.
+    # The retry schedule also covers the normal race where both containers start at once.
+    # memberOf is derived locally by the consumer overlay; accepting the provider's
+    # copy as well can leave stale backlinks. reqcert validates trust, while reqsan
+    # prevents a trusted certificate from falling back to a non-matching identity.
+    olcSyncrepl:
+        rid=101
+        provider=${LDAP_INIT_REPLICATION_PROVIDER}
+        bindmethod=simple
+        binddn="${LDAP_INIT_REPLICATION_BIND_DN}"
+        credentials="${LDAP_INIT_REPLICATION_BIND_PWD}"
+        searchbase="${LDAP_INIT_ORG_DN}"
+        schemachecking=on
+        exattrs=memberOf
+        type=refreshAndPersist
+        retry="5 5 60 +"
+        timeout=5
+        tls_cacert=/etc/ldap/certs/ca.crt
+        tls_reqcert=demand
+        tls_reqsan=demand
+    -
+    add: olcMultiProvider
+    olcMultiProvider: TRUE
+  init_replication_acl.ldif: |
+{{- if .Values.customAcls }}
+    {{- .Values.customAcls | nindent 4 }}
+{{- else }}
+    dn: olcDatabase={0}config,cn=config
+    changetype: modify
+    add: olcAccess
+    olcAccess: to *
+      by dn="${LDAP_INIT_ROOT_USER_DN}" write
+      by group/groupOfUniqueNames/uniqueMember="${LDAP_INIT_ADMIN_GROUP_DN}" write
+      by dn.exact="${LDAP_INIT_REPLICATION_BIND_DN}" read
+      by * none
+    -
+    # Initial refreshes must not be truncated by limits intended for LDAP clients.
+    add: olcLimits
+    olcLimits: dn.exact="${LDAP_INIT_REPLICATION_BIND_DN}" time.soft=unlimited time.hard=unlimited size.soft=unlimited size.hard=unlimited
+
+    dn: olcDatabase={1}mdb,cn=config
+    changetype: modify
+    # Insert the replication identity before attribute-specific ACLs so password
+    # hashes replicate too. "break" preserves the existing rules for every other DN.
+    add: olcAccess
+    olcAccess: {1}to * by dn.exact="${LDAP_INIT_REPLICATION_BIND_DN}" read by * break
+    -
+    # Initial refreshes must not be truncated by limits intended for LDAP clients.
+    add: olcLimits
+    olcLimits: dn.exact="${LDAP_INIT_REPLICATION_BIND_DN}" time.soft=unlimited time.hard=unlimited size.soft=unlimited size.hard=unlimited
+{{- end }}
+{{- end }}

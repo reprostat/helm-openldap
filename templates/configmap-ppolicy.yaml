@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "openldap.fullname" . }}-ppolicy
+  labels:
+    app: {{ template "openldap.name" . }}
+    chart: {{ template "openldap.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- if .Values.extraLabels }}
+{{ toYaml .Values.extraLabels | indent 4 }}
+{{- end }}
+data:
+  ppolicy.ldif: |
+    dn: {{ .Values.passwordPolicy.groupSubDN }},{{ include "global.baseDomain" . }}
+    description: Password policies
+    ou: pwdpolicies
+    objectClass: organizationalUnit
+
+    dn: cn=default,{{ .Values.passwordPolicy.groupSubDN }},{{ include "global.baseDomain" . }}
+    objectClass: top
+    objectClass: device
+    objectClass: pwdPolicy
+    objectClass: pwdPolicyChecker
+    cn: default
+    pwdAttribute: userPassword
+    pwdAllowUserChange: TRUE
+    pwdMustChange: FALSE
+    # if TRUE user must send current password during password modification operation
+    pwdSafeModify: FALSE
+    # remember last 3 passwords and disallow re-use
+    pwdInHistory: 3
+    pwdMaxAge: {{ .Values.passwordPolicy.expiry }}
+    pwdExpireWarning: {{ .Values.passwordPolicy.warn_before_expiry }}
+    # number of further bind operations after a password has expired
+    pwdGraceAuthNLimit: 0
+    # the server still accepts the password if unable to check the syntax (e.g. due to hashed)
+    pwdCheckQuality: 1
+    pwdMinLength: {{ .Values.passwordPolicy.min_length }}
+    pwdLockout: TRUE
+    # maximum number of consecutive password failures locking the account
+    pwdMaxFailure: {{ .Values.passwordPolicy.max_attempt }}
+    # 0=reset count of consecutive password failures only on successful authentication
+    pwdFailureCountInterval: 0
+    pwdLockoutDuration: {{ .Values.passwordPolicy.lockout }}

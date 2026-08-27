@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "openldap.fullname" . }}-logging
+  labels:
+    app: {{ template "openldap.name" . }}
+    chart: {{ template "openldap.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- if .Values.extraLabels }}
+{{ toYaml .Values.extraLabels | indent 4 }}
+{{- end }}
+data:
+  logging.ldif: |
+    dn: cn=config
+    changetype: modify
+    add: olcLogFile
+    olcLogFile: {{ .Values.logging.logFile }}
+    -
+    add: olcLogFileOnly
+    olcLogFileOnly: TRUE
+    -
+    add: olcLogFileFormat
+    olcLogFileFormat: {{ .Values.logging.logFormat }}
+    -
+    add: olcLogLevel
+    olcLogLevel: {{ .Values.logging.logLevel }}
+    -
+    add: olcLogFileRotate
+    olcLogFileRotate: {{ .Values.logging.logRotate.count }} {{ .Values.logging.logRotate.size }} {{ .Values.logging.logRotate.hours }}

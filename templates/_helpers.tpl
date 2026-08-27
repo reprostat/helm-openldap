@@ -50,100 +50,6 @@ Generate chart secret name
 {{- end -}}
 
 {{/*
-Generate olcServerID list
-*/}}
-{{- define "olcServerIDs" }}
-{{- $name := (include "openldap.fullname" .) }}
-{{- $namespace := .Release.Namespace }}
-{{- $cluster := .Values.replication.clusterName }}
-{{- $nodeCount := .Values.replicaCount | int }}
-  {{- range $index0 := until $nodeCount }}
-    {{- $index1 := $index0 | add1 }}
-    olcServerID: {{ $index1 }} ldap://{{ $name }}-{{ $index0 }}.{{ $name }}-headless.{{ $namespace }}.svc.{{ $cluster }}:1389
-  {{- end -}}
-{{- end -}}
-
-{{- define "openldap.replication.tls_cacert" -}}
-{{- if .Values.initTLSSecret.tls_enabled -}}
-  {{- if .Values.replication.tls_cacert -}}
-    {{- printf "tls_cacert=%s" .Values.replication.tls_cacert -}}
-  {{- else }}
-    {{- printf "tls_cacert=/opt/bitnami/openldap/certs/ca.crt" -}}
-  {{- end -}}
-{{- end -}}
-{{- end -}}
-
-{{- define "openldap.replication.tls_reqcert" -}}
-{{- if .Values.initTLSSecret.tls_enabled -}}
-  {{- if .Values.replication.tls_reqcert -}}
-    {{- printf "tls_reqcert=%s" .Values.replication.tls_reqcert -}}
-  {{- else }}
-    {{- printf "tls_reqcert=demand" -}}
-  {{- end -}}
-{{- else }}
-  {{- printf "tls_reqcert=never" -}}
-{{- end -}}
-{{- end -}}
-
-{{/*
-Generate olcSyncRepl list
-*/}}
-{{- define "olcSyncRepls" -}}
-{{- $name := (include "openldap.fullname" .) }}
-{{- $namespace := .Release.Namespace }}
-{{- $bindDNUser := .Values.global.configUser }}
-{{- $cluster := .Values.replication.clusterName }}
-{{- $configPassword :=  ternary .Values.global.configPassword "%%CONFIG_PASSWORD%%" (empty .Values.global.existingSecret) }}
-{{- $retry := .Values.replication.retry }}
-{{- $timeout := .Values.replication.timeout }}
-{{- $starttls := .Values.replication.starttls }}
-{{- $tls_reqcert := (include "openldap.replication.tls_reqcert" .) }}
-{{- $tls_cacert := (include "openldap.replication.tls_cacert" .) }}
-{{- $nodeCount := .Values.replicaCount | int }}
-  {{- range $index0 := until $nodeCount }}
-    {{- $index1 := $index0 | add1 }}
-    olcSyncRepl: rid=00{{ $index1 }} provider=ldap://{{ $name }}-{{ $index0 }}.{{ $name }}-headless.{{ $namespace }}.svc.{{ $cluster }}:1389 binddn="cn={{ $bindDNUser }},cn=config" bindmethod=simple credentials={{ $configPassword }} searchbase="cn=config" type=refreshAndPersist retry="{{ $retry }} +" timeout={{ $timeout }} starttls={{ $starttls }} {{ $tls_reqcert }} {{ $tls_cacert }}
-  {{- end -}}
-{{- end -}}
-
-{{/*
-Generate olcSyncRepl list
-*/}}
-{{- define "olcSyncRepls2" -}}
-{{- $name := (include "openldap.fullname" .) }}
-{{- $domain := (include "global.baseDomain" .) }}
-{{- $bindDNUser := .Values.global.adminUser }} 
-{{- $namespace := .Release.Namespace }}
-{{- $cluster := .Values.replication.clusterName }}
-{{- $adminPassword := ternary .Values.global.adminPassword "%%ADMIN_PASSWORD%%" (empty .Values.global.existingSecret) }}
-{{- $retry := .Values.replication.retry }}
-{{- $timeout := .Values.replication.timeout }}
-{{- $starttls := .Values.replication.starttls }}
-{{- $tls_reqcert := (include "openldap.replication.tls_reqcert" .) }}
-{{- $tls_cacert := (include "openldap.replication.tls_cacert" .) }}
-{{- $interval := .Values.replication.interval }}
-{{- $nodeCount := .Values.replicaCount | int }}
-  {{- range $index0 := until $nodeCount }}
-    {{- $index1 := $index0 | add1 }}
-    olcSyncrepl:
-      rid=10{{ $index1 }}
-      provider=ldap://{{ $name }}-{{ $index0 }}.{{ $name }}-headless.{{ $namespace }}.svc.{{ $cluster }}:1389
-      binddn={{ printf "cn=%s,%s" $bindDNUser $domain }}
-      bindmethod=simple
-      credentials={{ $adminPassword }}
-      searchbase={{ $domain }}
-      type=refreshAndPersist
-      interval={{ $interval }}
-      network-timeout=0
-      retry="{{ $retry }} +"
-      timeout={{ $timeout }}
-      starttls={{ $starttls }}
-      {{ $tls_reqcert }}
-      {{ $tls_cacert }}
-  {{- end -}}
-{{- end -}}
-
-{{/*
 Renders a value that contains template.
 Usage:
 {{ include "openldap.tplValue" ( dict "value" .Values.path.to.the.Value "context" $) }}
@@ -170,73 +76,11 @@ Return the proper Docker Image Registry Secret Names
 {{ include "common.images.pullSecrets" (dict "images" (list .Values.image ) "global" .Values.global) }}
 {{- end -}}
 
-
 {{/*
-Return the proper Openldap init container image name
+Return total replica count
 */}}
-{{- define "openldap.initTLSSecretImage" -}}
-{{- include "common.images.image" (dict "imageRoot" .Values.initTLSSecret.image "global" .Values.global) -}}
-{{- end -}}
-
-{{/*
-Return the proper Openldap init container image name
-*/}}
-{{- define "openldap.initSchemaImage" -}}
-{{- include "common.images.image" (dict "imageRoot" .Values.initSchema.image "global" .Values.global) -}}
-{{- end -}}
-
-{{/*
-Return the proper Openldap volume permissions init container image name
-*/}}
-{{- define "openldap.volumePermissionsImage" -}}
-{{- include "common.images.image" (dict "imageRoot" .Values.volumePermissions.image "global" .Values.global) -}}
-{{- end -}}
-
-
-{{/*
-Return the list of builtin schema files to mount
-Cannot return list => return string comma separated
-*/}}
-{{- define "openldap.builtinSchemaFiles" -}}
-  {{- $schemas := "" -}}
-  {{- $context := index . "context" -}}
-  {{- $mode := index . "mode" -}}
-  {{- if $context.Values.replication.enabled -}}
-    {{- if $mode -}}
-      {{- $schemas = "brep,readonly" -}}
-    {{- else -}}
-      {{- $schemas = "syncprov,serverid,csyncprov,rep,bsyncprov,brep,acls" -}}
-    {{- end -}}
-  {{- else -}}
-    {{- $schemas = "acls" -}}
-  {{- end -}}
-  {{- print $schemas -}}
-{{- end -}}
-
-{{/*
-Return the list of custom schema files to use
-Cannot return list => return string comma separated
-*/}}
-{{- define "openldap.customSchemaFiles" -}}
-  {{- $context := index . "context" -}}
-  {{- $schemas := "" -}}
-  {{- $schemas := ((join "," ($context.Values.customSchemaFiles | keys | sortAlpha))  | replace ".ldif" "") -}}
-  {{- print $schemas -}}
-{{- end -}}
-
-{{/*
-Return the list of all schema files to use
-Cannot return list => return string comma separated
-*/}}
-{{- define "openldap.schemaFiles" -}}
-  {{- $context := index . "context" -}}
-  {{- $mode := index . "mode" -}}
-  {{- $schemas := (include "openldap.builtinSchemaFiles" .) -}}
-  {{- $custom_schemas := (include "openldap.customSchemaFiles" .) -}}
-  {{- if gt (len $custom_schemas) 0 -}}
-    {{- $schemas = print $schemas "," $custom_schemas  -}}
-  {{- end -}}
-  {{- print $schemas -}}
+{{- define "openldap.replicaCount" -}}
+{{- add (int .Values.replication.writeableReplicaCount) (int .Values.replication.readOnlyReplicaCount) -}}
 {{- end -}}
 
 {{/*
