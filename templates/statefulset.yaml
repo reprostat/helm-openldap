@@ -118,9 +118,9 @@ spec:
           {{- end }}
           ports:
             - name: ldap-port
-              containerPort: 1389
+              containerPort: 389
             - name: ssl-ldap-port
-              containerPort: 1636
+              containerPort: 636
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             tcpSocket:
@@ -161,21 +161,41 @@ spec:
           lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.lifecycleHooks "context" $) | nindent 12 }}
           {{- end }}
           volumeMounts:
+            - name: passwords
+              subpath: LDAP_ADMIN_PASSWORD
+              mountPath: /run/secrets/ldap-admin-password
+            - name: passwords
+              subpath: LDAP_REPLICATION_PASSWORD
+              mountPath: /run/secrets/ldap-replication-password
+            - name: config
+              mountPath: /etc/ldap/slapd.d
             - name: data
-              mountPath: /bitnami/openldap/
+              mountPath: /var/lib/ldap
             - name: certs
-              mountPath: /opt/bitnami/openldap/certs
+              mountPath: /opt/init/certs
 {{- if .Values.customSchemaFiles}}
-            {{- range $file := (include "openldap.customSchemaFiles" (dict "context" . ) | split ",") }}
             - name: custom-schema-files
-              mountPath: /opt/bitnami/openldap/etc/schema/{{ $file }}.ldif
-              subPath: {{ $file }}.ldif
-            {{- end }}
+              mountPath: /opt/ldifs/custom-schema
 {{- end }}
 {{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
             - name: custom-ldif-files
-              mountPath: /ldifs/
+              subPath: root.ldif
+              mountPath: /opt/ldifs/init_org_tree.ldif
+            - name: custom-ldif-files
+              subPath: entries.ldif
+              mountPath: /opt/ldifs/init_org_entries.ldif
 {{- end }}
+            - name: ppolicy
+              subPath: ppolicy.ldif
+              mountPath: /opt/ldifs/init_org_ppolicy.ldif              
+{{- if .Values.accessLog.enabled }}
+            - name: accesslog
+              subPath: init_accesslog.ldif
+              mountPath: /opt/ldifs/custom/init_accesslog.ldif
+{{- end }}
+            - name: logging
+              subPath: init_logging.ldif
+              mountPath: /opt/ldifs/custom/init_logging.ldif
 {{- range .Values.customFileSets }}
 {{- $fs := . }}
 {{- range .files }}
@@ -191,54 +211,53 @@ spec:
 {{- include "common.tplvalues.render" ( dict "value" .Values.sidecars "context" $) | nindent 8 }}
 {{- end }}
       volumes:
+        - name: passwords
+          secret:
+            secretName: {{ template "openldap.secretName" . }}
 {{- if .Values.persistence.enabled }}
-{{- if .Values.persistence.existingClaim }}
+{{- if .Values.persistence.existingClaims }}
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaims.config }}
         - name: data
           persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingClaim }}
+            claimName: {{ .Values.persistence.existingClaims.data }}
 {{- end }}
 {{- end }}
-        - name: cm-replication-acls
+{{- if (gt (int .Values.replication.writeableReplicaCount) 1) }}
+        - name: replication
           configMap:
-            name: {{ template "openldap.fullname" . }}-replication-acls
-        - name: replication-acls
-          emptyDir:
-            medium: Memory
-
+            name: {{ template "openldap.fullname" . }}-replication
+{{- end }}
 {{- if .Values.customLdifFiles }}
-        - name: cm-custom-ldif-files
+        - name: custom-ldif-files
           configMap:
             name: {{ template "openldap.fullname" . }}-customldif
-        - name: custom-ldif-files
-          emptyDir:
-            medium: Memory
 {{- else if .Values.customLdifCm }}
-        - name: cm-custom-ldif-files
+        - name: custom-ldif-files
           configMap:
             name: {{ .Values.customLdifCm }}
-        - name: custom-ldif-files
-          emptyDir:
-            medium: Memory
 {{- end }}
+        - name: ppolicy
+          configMap:
+            name: {{ template "openldap.fullname" . }}-ppolicy
+{{- if .Values.accessLog.enabled }}
+        - name: accesslog
+          configMap:
+            name: {{ template "openldap.fullname" . }}-accesslog
+{{- end }}
+        - name: logging
+          configMap:
+            name: {{ template "openldap.fullname" . }}-logging
 {{- if .Values.customSchemaFiles }}
-        - name: cm-custom-schema-files
+        - name: custom-schema-files
           configMap:
             name: {{ template "openldap.fullname" . }}-customschema
-        - name: custom-schema-files
-          emptyDir:
-            medium: Memory
 {{- end }}
-        - name: certs
-          emptyDir:
-            medium: Memory
 {{- if .Values.global.tlsSecret }}
         - name: secret-certs
           secret:
             secretName: {{ .Values.global.tlsSecret }}
-{{- else }}
-        - name: secret-certs
-          emptyDir:
-            medium: Memory
 {{- end }}
 {{- range .Values.customFileSets }}
         - name: {{ .name }}
@@ -248,10 +267,11 @@ spec:
         {{- if .Values.extraVolumes }}
         {{- include "common.tplvalues.render" (dict "value" .Values.extraVolumes "context" $) | nindent 8 }}
         {{- end }}
-{{- if and (not .Values.persistence.existingClaim)  .Values.persistence.enabled }}
+{{- range $vol := tuple "config" "data" }}      
+{{- if and (not .Values.persistence.existingClaims)  .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
-        name: data
+        name: {{ $vol }}
         annotations:
         {{- range $key, $value := .Values.persistence.annotations }}
           {{ $key }}: {{ $value }}
@@ -270,8 +290,9 @@ spec:
       {{- else }}
         storageClassName: "{{ .Values.persistence.storageClass }}"
       {{- end }}
-{{- end }}
+      {{- end }}
 {{- else if (not .Values.persistence.enabled) }}
-        - name: data
+        - name: {{ $vol }}
           emptyDir: {}
+{{- end }}
 {{- end }}

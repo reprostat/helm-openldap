@@ -13,6 +13,12 @@ metadata:
 {{- end }}
 data:
   init.sh: |
+    # Install certificates
+    mkdir -p /run/secrets/ldap
+    cp -pf /opt/init/certs/ca.crt /run/secrets/ldap/ca.crt
+    cp -pf /opt/init/certs/tls.crt /run/secrets/ldap/server.crt
+    cp -pf /opt/init/certs/tls.key /run/secrets/ldap/server.key
+
 {{- if (gt (int .Values.replication.writeableReplicaCount) 1) }}
     # Configure Mirror Node Replication
     export LDAP_INIT_REPLICATION_SERVERID=$(($(hostname | grep -oP '(?<={{ template "openldap.fullname" . }}-)\d+')+1))
@@ -25,6 +31,8 @@ data:
     cp -pf /opt/init/config/init_replication.ldif /opt/ldifs/init_replication_provider_config.ldif
     cp -pf /opt/init/config/init_replication_acl.ldif /opt/ldifs/init_config_admin_access.ldif
 {{- end }}
+
+    mkdir -p /opt/ldifs/custom
 
 {{- if .Values.accessLog.enabled }}
     # Accesslog Configuration
