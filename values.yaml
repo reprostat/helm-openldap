@@ -20,7 +20,7 @@ global:
   replicationPassword: Not@SecurePassw0rd
   ldapPort: 389
   sslLdapPort: 636
-  # Allow access to the config database (cn=config) for the admin user. This is required for configuring accesslog and other advanced features.
+  # Allow access to the config database (cn=config) for the admin user. This is required for configuring logging and accesslog.
   allowConfigAccess: false
   # Allow anonymous access to the LDAP server. This may be required for some applications that need to read the LDAP tree without authentication.
   allowAnonymousAccess: true
@@ -122,7 +122,8 @@ passwordPolicy:
 
 logging:
   logFile: /var/lib/ldap/slapd.log
-  logFormat: syslog-utc
+  # Accepted log formats: "debug", "syslog-utc" or "syslog-localtime"
+  logFormat: debug
   # For valid log levels: see https://openldap.org/doc/admin26/slapdconfig.html#loglevel%20%3Clevel%3E
   logLevel: "config stats"
   logRotate:
@@ -187,7 +188,9 @@ persistence:
   ##   GKE, AWS & OpenStack)
   ##
   # storageClass: "standard-singlewriter"
-  # existingClaim: openldap-pvc
+  # existingClaims:
+  #  config: openldap-config
+  #  data: openldap-data
   accessModes:
     - ReadWriteOnce
   size: 8Gi

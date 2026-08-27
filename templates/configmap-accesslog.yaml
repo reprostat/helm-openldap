@@ -1,4 +1,4 @@
-{{- if .Values.accessLog.enabled }}
+{{- if and .Values.accessLog.enabled .Values.global.allowConfigAccess }}
 apiVersion: v1
 kind: ConfigMap
 metadata:

@@ -1,3 +1,4 @@
+{{- if .Values.global.allowConfigAccess }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -11,7 +12,7 @@ metadata:
 {{ toYaml .Values.extraLabels | indent 4 }}
 {{- end }}
 data:
-  logging.ldif: |
+  init_logging.ldif: |
     dn: cn=config
     changetype: modify
     add: olcLogFile
@@ -28,3 +29,4 @@ data:
     -
     add: olcLogFileRotate
     olcLogFileRotate: {{ .Values.logging.logRotate.count }} {{ .Values.logging.logRotate.size }} {{ .Values.logging.logRotate.hours }}
+{{- end }}
