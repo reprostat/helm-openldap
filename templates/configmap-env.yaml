@@ -24,15 +24,27 @@ data:
   LDAP_INIT_ADMIN_GROUP_DN: {{ .Values.adminGroupSubDN }},{{ include "global.baseDomain" . }}
   LDAP_INIT_PASSWORD_RESET_GROUP_DN: {{ .Values.adminGroupSubDN }},{{ include "global.baseDomain" . }}
   LDAP_INIT_ROOT_USER_DN: cn=admin,{{ include "global.baseDomain" . }}
+  LDAP_INIT_ROOT_USER_PW_FILE: /opt/init/passwords/ldap-admin-password
   LDAP_INIT_ALLOW_CONFIG_ACCESS: "{{ .Values.global.allowConfigAccess }}" # required for configuring accesslog
   LDAP_INIT_ALLOW_ANONYMOUS_ROOT_DSE: "{{ .Values.global.allowAnonymousAccess }}"
-  LDAP_INIT_RFC2307BIS_SCHEMA: {{ .Values.useRfc2307bisSchema | ternary 1 0 }}
+  LDAP_INIT_RFC2307BIS_SCHEMA: {{ .Values.useRfc2307bisSchema | ternary 1 0 | quote }}
   LDAP_INIT_PPOLICY_DEFAULT_DN: cn=default,{{ .Values.passwordPolicy.groupSubDN }},{{ include "global.baseDomain" . }}
   LDAP_PPOLICY_PPM_CONFIG: |-
     {{- .Values.passwordPolicy.configPPM | nindent 4 }}
   LDAP_BACKUP_TIME: {{ .Values.backup.schedule }}
   LDAP_BACKUP_FILE: {{ .Values.backup.file }}
+  LDAP_TLS_CA_FILE: /opt/init/certs/ca.crt
+  LDAP_TLS_CERT_FILE: /opt/init/certs/tls.crt
+  LDAP_TLS_KEY_FILE: /opt/init/certs/tls.key  
   LDAPTLS_CACERT: /etc/ldap/certs/ca.crt
+{{- if (gt (int (include "openldap.replicaCount" .)) 1) }}
+  LDAP_INIT_REPLICATION_ROLE: provider
+  LDAP_INIT_REPLICATION_NUMBER: {{ (include "openldap.replicaCount" .) | quote }}
+  LDAP_INIT_REPLICATION_BIND_PASSWORD_FILE: /opt/init/passwords/ldap-replication-password
+{{- end }}
+{{- if .Values.accessLog.enabled }}
+  LDAP_INIT_ACCESSLOG_DATA_DIR: {{ .Values.accessLog.dataDir }}
+{{- end }}
 {{- if .Values.env }}
 {{ toYaml .Values.env | indent 2 }}
 {{- end }}

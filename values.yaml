@@ -144,6 +144,7 @@ adminGroupSubDN: cn=global-admins,ou=groups
 useRfc2307bisSchema: false
 accessLog:
   enabled: false
+  dataDir: /var/lib/ldap/accesslog
   # Accepted values are "writes", "reads", "session", "all", or a combination of them separated by spaces.
   operations: writes reads
   purgeSchedule: 1 # scan the accesslog DB every 1 day

@@ -14,7 +14,7 @@ metadata:
   annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replication.writeableReplicaCount }}
   selector:
     matchLabels: {{ include "common.labels.matchLabels" . | nindent 6 }}
       app.kubernetes.io/component: {{ template "openldap.fullname" . }}
@@ -161,41 +161,44 @@ spec:
           lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.lifecycleHooks "context" $) | nindent 12 }}
           {{- end }}
           volumeMounts:
-            - name: passwords
-              subpath: LDAP_ADMIN_PASSWORD
-              mountPath: /run/secrets/ldap-admin-password
-            - name: passwords
-              subpath: LDAP_REPLICATION_PASSWORD
-              mountPath: /run/secrets/ldap-replication-password
             - name: config
               mountPath: /etc/ldap/slapd.d
             - name: data
               mountPath: /var/lib/ldap
+            - name: passwords
+              mountPath: /opt/init/passwords
             - name: certs
               mountPath: /opt/init/certs
-{{- if .Values.customSchemaFiles }}
+            - name: script
+              mountPath: /opt/init.sh
+              subPath: init.sh
+{{- if or .Values.customSchemaFiles .Values.customSchemaCm }}
             - name: custom-schema-files
-              mountPath: /opt/ldifs/custom-schema
+              mountPath: /opt/init/schemas
 {{- end }}
-{{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
+{{- if or .Values.customLdifFiles .Values.customLdifCm }}
             - name: custom-ldif-files
-              subPath: root.ldif
-              mountPath: /opt/ldifs/init_org_tree.ldif
-            - name: custom-ldif-files
-              subPath: entries.ldif
-              mountPath: /opt/ldifs/init_org_entries.ldif
+              mountPath: /opt/init/base
+{{- end }}
+{{- if (gt (int .Values.replication.writeableReplicaCount) 1) }}
+            - name: replication
+              subPath: init_replication.ldif
+              mountPath: /opt/init/config/init_replication.ldif
+            - name: replication
+              subPath: init_replication_acl.ldif
+              mountPath: /opt/init/config/init_replication_acl.ldif
 {{- end }}
             - name: ppolicy
               subPath: ppolicy.ldif
-              mountPath: /opt/ldifs/init_org_ppolicy.ldif              
+              mountPath: /opt/init/config/init_org_ppolicy.ldif              
 {{- if .Values.accessLog.enabled }}
             - name: accesslog
               subPath: init_accesslog.ldif
-              mountPath: /opt/ldifs/custom/init_accesslog.ldif
+              mountPath: /opt/init/config/init_accesslog.ldif
 {{- end }}
             - name: logging
               subPath: init_logging.ldif
-              mountPath: /opt/ldifs/custom/init_logging.ldif
+              mountPath: /opt/init/config/init_logging.ldif
 {{- range .Values.customFileSets }}
 {{- $fs := . }}
 {{- range .files }}
@@ -214,6 +217,11 @@ spec:
         - name: passwords
           secret:
             secretName: {{ template "openldap.secretName" . }}
+            items:
+              - key: LDAP_ADMIN_PASSWORD
+                path: ldap-admin-password
+              - key: LDAP_REPLICATION_PASSWORD
+                path: ldap-replication-password
 {{- if .Values.persistence.enabled }}
 {{- if .Values.persistence.existingClaims }}
         - name: config
@@ -224,6 +232,9 @@ spec:
             claimName: {{ .Values.persistence.existingClaims.data }}
 {{- end }}
 {{- end }}
+        - name: script
+          configMap:
+            name: {{ template "openldap.fullname" . }}-script
 {{- if (gt (int .Values.replication.writeableReplicaCount) 1) }}
         - name: replication
           configMap:
@@ -253,9 +264,13 @@ spec:
         - name: custom-schema-files
           configMap:
             name: {{ template "openldap.fullname" . }}-customschema
+{{- else if .Values.customSchemaCm }}
+        - name: custom-schema-files
+          configMap:
+            name: {{ .Values.customSchemaCm }}
 {{- end }}
 {{- if .Values.global.tlsSecret }}
-        - name: secret-certs
+        - name: certs
           secret:
             secretName: {{ .Values.global.tlsSecret }}
 {{- end }}
@@ -282,7 +297,7 @@ spec:
         {{- end }}
         resources:
           requests:
-            storage: {{ .Values.persistence.size | quote }}
+            storage: "50Mi"
       {{- if .Values.persistence.storageClass }}
       {{- if (eq "-" .Values.persistence.storageClass) }}
         storageClassName: ""

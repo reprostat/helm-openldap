@@ -13,12 +13,6 @@ metadata:
 {{- end }}
 data:
   init.sh: |
-    # Install certificates
-    mkdir -p /run/secrets/ldap
-    cp -pf /opt/init/certs/ca.crt /run/secrets/ldap/ca.crt
-    cp -pf /opt/init/certs/tls.crt /run/secrets/ldap/server.crt
-    cp -pf /opt/init/certs/tls.key /run/secrets/ldap/server.key
-
 {{- if (gt (int .Values.replication.writeableReplicaCount) 1) }}
     # Configure Mirror Node Replication
     export LDAP_INIT_REPLICATION_SERVERID=$(($(hostname | grep -oP '(?<={{ template "openldap.fullname" . }}-)\d+')+1))
@@ -27,15 +21,28 @@ data:
     else
         export LDAP_INIT_REPLICATION_PROVIDER="ldaps://{{ template "openldap.fullname" . }}-0.{{ template "openldap.fullname" . }}-headless.{{ template "openldap.fullname" . }}.svc.cluster.local"
     fi
-    export LDAP_INIT_REPLICATION_BIND_PWD=$(</run/secrets/ldap-replication-password)
+    export LDAP_INIT_REPLICATION_BIND_PWD=$(</opt/init/passwords/ldap-replication-password)
     cp -pf /opt/init/config/init_replication.ldif /opt/ldifs/init_replication_provider_config.ldif
     cp -pf /opt/init/config/init_replication_acl.ldif /opt/ldifs/init_config_admin_access.ldif
 {{- end }}
 
+{{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
+{{- end }}
+
+    # Custom Schema and LDIFs
+    mkdir -p /opt/ldifs/custom-schema
+    cp -r /opt/init/schemas/*.ldif /opt/ldifs/custom-schema/
+
+    cp -pf /opt/init/base/tree.ldif /opt/ldifs/init_org_tree.ldif
+    cp -pf /opt/init/base/entries.ldif /opt/ldifs/init_org_entries.ldif
+    cp -pf /opt/init/config/init_org_ppolicy.ldif /opt/ldifs/init_org_ppolicy.ldif
+
     mkdir -p /opt/ldifs/custom
+    cp -pf /opt/init/config/init_logging.ldif /opt/ldifs/custom/init_logging.ldif
 
 {{- if .Values.accessLog.enabled }}
     # Accesslog Configuration
     mkdir -p "$LDAP_INIT_ACCESSLOG_DATA_DIR"
+    cp -pf /opt/init/config/init_accesslog.ldif /opt/ldifs/custom/init_accesslog.ldif
 {{- end }}
 {{- end }}

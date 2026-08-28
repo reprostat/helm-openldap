@@ -30,8 +30,8 @@ data:
     pwdSafeModify: FALSE
     # remember last 3 passwords and disallow re-use
     pwdInHistory: 3
-    pwdMaxAge: {{ .Values.passwordPolicy.expiry }}
-    pwdExpireWarning: {{ .Values.passwordPolicy.warn_before_expiry }}
+    pwdMaxAge: {{ int .Values.passwordPolicy.expiry }}
+    pwdExpireWarning: {{ int .Values.passwordPolicy.warn_before_expiry }}
     # number of further bind operations after a password has expired
     pwdGraceAuthNLimit: 0
     # the server still accepts the password if unable to check the syntax (e.g. due to hashed)
