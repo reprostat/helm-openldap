@@ -1,4 +1,3 @@
-{{- if or (gt (int .Values.replication.writeableReplicaCount) 1) .Values.accessLog.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -24,19 +23,31 @@ data:
     export LDAP_INIT_REPLICATION_BIND_PWD=$(</opt/init/passwords/ldap-replication-password)
     cp -pf /opt/init/config/init_replication.ldif /opt/ldifs/init_replication_provider_config.ldif
     cp -pf /opt/init/config/init_replication_acl.ldif /opt/ldifs/init_config_admin_access.ldif
-{{- end }}
 
+    if [[ "$LDAP_INIT_REPLICATION_SERVERID" == "1" ]]; then 
+        echo "This is the first replica, adding domain and config entries"
+
+        # Add the base tree and entries for the organization
 {{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
+        cp -pf /opt/init/base/tree.ldif /opt/ldifs/init_org_tree.ldif
+        cp -pf /opt/init/base/entries.ldif /opt/ldifs/init_org_entries.ldif
+{{- end }}
+        cp -pf /opt/init/config/init_org_ppolicy.ldif /opt/ldifs/init_org_ppolicy.ldif
+    else
+        echo "This is a mirror replica, skipping domain and config entries"
+
+        echo "" > /opt/ldifs/init_org_tree.ldif
+        echo "" > /opt/ldifs/init_org_entries.ldif
+        echo "" > /opt/ldifs/init_org_ppolicy.ldif
+        echo "" > /opt/ldifs/init_replication_provider_account.ldif
+    fi
 {{- end }}
 
     # Custom Schema and LDIFs
     mkdir -p /opt/ldifs/custom-schema
-    cp -r /opt/init/schemas/*.ldif /opt/ldifs/custom-schema/
+    cp -rL /opt/init/schemas/*.ldif /opt/ldifs/custom-schema/
 
-    cp -pf /opt/init/base/tree.ldif /opt/ldifs/init_org_tree.ldif
-    cp -pf /opt/init/base/entries.ldif /opt/ldifs/init_org_entries.ldif
-    cp -pf /opt/init/config/init_org_ppolicy.ldif /opt/ldifs/init_org_ppolicy.ldif
-
+    # Logging Configuration
     mkdir -p /opt/ldifs/custom
     cp -pf /opt/init/config/init_logging.ldif /opt/ldifs/custom/init_logging.ldif
 
@@ -44,5 +55,4 @@ data:
     # Accesslog Configuration
     mkdir -p "$LDAP_INIT_ACCESSLOG_DATA_DIR"
     cp -pf /opt/init/config/init_accesslog.ldif /opt/ldifs/custom/init_accesslog.ldif
-{{- end }}
 {{- end }}
