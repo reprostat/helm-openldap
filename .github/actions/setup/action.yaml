@@ -1,17 +1,33 @@
 name: 'Setup env'
 description: 'Greet someone'
 inputs:
+  kind-version:
+    description: 'Version of kind to install'
+    required: true
+    default: 0.33.0
+  k8s-version:
+    description: 'Version of KIND node and kubectl to install'
+    required: true
+    default: 1.36.4
+  cert-manager-version:
+    description: 'Version of cert-manager to install'
+    required: true
+    default: 1.21.2
   install-chaos:
     description: 'Setup ChaosMesh'
     required: true
     default: false
+  chaos-mesh-version:
+    description: 'Version of ChaosMesh to install'
+    required: true
+    default: 2.8.4
 runs:
   using: "composite"
   steps:
     - name: Lint
       shell: bash
       run: |
-        curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
         chmod 700 /tmp/get_helm.sh
         /tmp/get_helm.sh
         helm dependency update
@@ -19,20 +35,20 @@ runs:
     - name: setup cluster
       shell: bash
       run: |
-        curl -Lo /tmp/kind https://kind.sigs.k8s.io/dl/v0.31.0/kind-linux-amd64
+        curl -Lo /tmp/kind https://kind.sigs.k8s.io/dl/v${{ inputs.kind-version }}/kind-linux-amd64
         chmod +x /tmp/kind
-        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        curl -LO "https://dl.k8s.io/release/v${{ inputs.k8s-version }}/bin/linux/amd64/kubectl"
         sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
         rm -f kubectl
         sudo apt update
         sudo apt-get install -y ldap-utils
-        /tmp/kind create cluster --config=$GITHUB_WORKSPACE/.bin/kind-conf.yml --image=kindest/node:v1.35.1@sha256:05d7bcdefbda08b4e038f644c4df690cdac3fba8b06f8289f30e10026720a1ab
+        /tmp/kind create cluster --config=$GITHUB_WORKSPACE/.bin/kind-conf.yml --image=kindest/node:v${{ inputs.k8s-version }}
         kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
         kubectl patch daemonsets -n projectcontour envoy -p '{"spec":{"template":{"spec":{"nodeSelector":{"ingress-ready":"true"}}}}}'
-        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.5/cert-manager.yaml
+        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v${{ inputs.cert-manager-version }}/cert-manager.yaml
         kubectl rollout status deployments -n cert-manager
     - name: setup chaos mesh
       if: ${{ inputs.install-chaos == 'true' }}
       shell: bash
       run: |
-        curl -sSL https://mirrors.chaos-mesh.org/v2.8.1/install.sh  | bash -s -- --local kind
+        curl -sSL https://mirrors.chaos-mesh.org/v${{ inputs.chaos-mesh-version }}/install.sh  | bash -s -- --local kind
