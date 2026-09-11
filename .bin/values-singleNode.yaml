@@ -1,0 +1,21 @@
+global:
+  ldapDomain: "singlenode.org"
+  existingSecret: "my-super-secret"
+
+replication:
+  writeableReplicaCount: 1
+
+service:
+  type: NodePort
+  ldapPortNodePort: 30389
+  sslLdapPortNodePort: 30636
+  
+phpldapadmin:
+  ingress:
+    hosts:
+    - "phpldapadmin.example"
+
+ltb-passwd:
+  ingress:
+    hosts:
+    - "ssl-ldap2.example"

@@ -41,16 +41,24 @@ data:
         echo "" > /opt/ldifs/init_org_ppolicy.ldif
         echo "" > /opt/ldifs/init_replication_provider_account.ldif
     fi
+{{- else }}
+    echo "Replication is not enabled, this is the only node"
+{{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
+    cp -pf /opt/init/base/tree.ldif /opt/ldifs/init_org_tree.ldif
+    cp -pf /opt/init/base/entries.ldif /opt/ldifs/init_org_entries.ldif
 {{- end }}
-
+    cp -pf /opt/init/config/init_org_ppolicy.ldif /opt/ldifs/init_org_ppolicy.ldif
+{{- end }}
+{{- if or (.Values.customSchemaFiles) (.Values.customSchemaCm) }}
     # Custom Schema and LDIFs
     mkdir -p /opt/ldifs/custom-schema
     cp -rL /opt/init/schemas/*.ldif /opt/ldifs/custom-schema/
-
+{{- end }}
+{{- if .Values.global.allowConfigAccess }}
     # Logging Configuration
     mkdir -p /opt/ldifs/custom
     cp -pf /opt/init/config/init_logging.ldif /opt/ldifs/custom/init_logging.ldif
-
+{{- end }}
 {{- if .Values.accessLog.enabled }}
     # Accesslog Configuration
     mkdir -p "$LDAP_INIT_ACCESSLOG_DATA_DIR"

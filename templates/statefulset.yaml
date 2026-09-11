@@ -167,8 +167,10 @@ spec:
               mountPath: /var/lib/ldap
             - name: passwords
               mountPath: /opt/init/passwords
+{{- if .Values.global.tlsSecret }}              
             - name: certs
               mountPath: /opt/init/certs
+{{- end }}
             - name: script
               mountPath: /opt/init.sh
               subPath: init.sh
@@ -196,9 +198,11 @@ spec:
               subPath: init_accesslog.ldif
               mountPath: /opt/init/config/init_accesslog.ldif
 {{- end }}
+{{- if .Values.global.allowConfigAccess }}
             - name: logging
               subPath: init_logging.ldif
               mountPath: /opt/init/config/init_logging.ldif
+{{- end }}
 {{- range .Values.customFileSets }}
 {{- $fs := . }}
 {{- range .files }}
@@ -220,8 +224,10 @@ spec:
             items:
               - key: LDAP_ADMIN_PASSWORD
                 path: ldap-admin-password
+{{- if (gt (int (include "openldap.replicaCount" .)) 1) }}                
               - key: LDAP_REPLICATION_PASSWORD
                 path: ldap-replication-password
+{{- end }}
 {{- if .Values.persistence.enabled }}
 {{- if .Values.persistence.existingClaims }}
         - name: config
@@ -257,9 +263,11 @@ spec:
           configMap:
             name: {{ template "openldap.fullname" . }}-accesslog
 {{- end }}
+{{- if .Values.global.allowConfigAccess }}
         - name: logging
           configMap:
             name: {{ template "openldap.fullname" . }}-logging
+{{- end }}
 {{- if .Values.customSchemaFiles }}
         - name: custom-schema-files
           configMap:

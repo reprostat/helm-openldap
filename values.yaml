@@ -120,6 +120,7 @@ passwordPolicy:
   max_attempt: 5
   lockout: 300 # [seconds]; 0 = infinite -> password reset required
 
+# allowConfigAccess MUST be true to allow configuring logging.
 logging:
   logFile: /var/lib/ldap/slapd.log
   # Accepted log formats: "debug", "syslog-utc" or "syslog-localtime"
@@ -142,6 +143,7 @@ backup:
 
 adminGroupSubDN: cn=global-admins,ou=groups
 useRfc2307bisSchema: false
+# allowConfigAccess MUST be true to allow configuring accesslog.
 accessLog:
   enabled: false
   dataDir: /var/lib/ldap/accesslog
