@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
-      uses: actions/checkout@v1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Run custom action
       # Use the location in the repository (without action.yml)
       uses: ./.github/actions/setup
@@ -16,18 +16,15 @@ jobs:
       shell: bash
       run: |
         cd "$GITHUB_WORKSPACE"
-        helm install openldap-stack-ha -n no-ldap-port --create-namespace -f .bin/disableLdapPort.yaml .
-        kubectl -n no-ldap-port rollout status sts openldap-stack-ha -n no-ldap-port
-    - name: verify no ldap port deployment
+        helm -n tlswrite install openldap-stack-ha  --create-namespace -f .bin/tlswrite-values.yaml .
+        kubectl -n tlswrite rollout status sts openldap-stack-ha
+    - name: verify tlswrite deployment
       shell: bash
       run: |
           echo "test access to openldap database"
           echo "Write test to openldap database"
-          LDAPTLS_REQCERT=never ldapadd -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -f .bin/simpleUser.ldif
+          LDAPTLS_REQCERT=never ldapadd -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -f .bin/tlswriteUser.ldif
           sleep 10
           LDAPTLS_REQCERT=never ldapsearch -o nettimeout=20 -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org' > /tmp/test-write.txt
           cat /tmp/test-write.txt
-          if [ $(grep "numResponses" /tmp/test-write.txt | cut -d ":" -f 2 | tr -d ' ') -ne 3 ]; then exit 1 ; fi
-
-
-      
+          if [ $(grep "numResponses" /tmp/test-write.txt | cut -d ":" -f 2 | tr -d ' ') -ne 5 ]; then exit 1 ; fi

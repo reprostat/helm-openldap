@@ -33,7 +33,7 @@ data:
     {{- .Values.passwordPolicy.configPPM | nindent 4 }}
   LDAP_BACKUP_TIME: {{ .Values.backup.schedule }}
   LDAP_BACKUP_FILE: {{ .Values.backup.file }}
-{{- if .Values.global.tlsSecret }}  
+{{- if or .Values.global.tlsSecret .Values.initTLScerts.enabled }}  
   LDAP_TLS_CA_FILE: /opt/init/certs/ca.crt
   LDAP_TLS_CERT_FILE: /opt/init/certs/tls.crt
   LDAP_TLS_KEY_FILE: /opt/init/certs/tls.key  

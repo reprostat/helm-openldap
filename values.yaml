@@ -24,8 +24,33 @@ global:
   allowConfigAccess: false
   # Allow anonymous access to the LDAP server. This may be required for some applications that need to read the LDAP tree without authentication.
   allowAnonymousAccess: true
-  # The name of a kubernetes.io/tls type secret to use for TLS
+  # The name of a kubernetes.io/tls type secret to use for TLS. Mutually exclusive with initTLScerts.
   tlsSecret: "" 
+
+## @param initTLScerts Whether to initialize TLS certificates for the LDAP server. Mutually exclusive with providing your own TLS secret via global.tlsSecret
+##
+initTLScerts:
+  enabled: false
+  image:
+    registry: docker.io
+    repository: alpine/openssl
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources: {}
+  ## Example:
+  ## requests:
+  ##   cpu: 250m
+  ##   memory: 500Mi
+  ## limits:
+  ##   cpu: 500m
+  ##   memory: 1Gi
+  extraSAN: {}
+  ## Additional Subject Alternative Names (SANs) for the TLS certificate.
+  ## Example:
+  ## DNS:
+  ##   - "example.com"
+  ## IP:
+  ##   - "127.0.0.1"
 
 ## @section Common parameters
 
@@ -61,7 +86,7 @@ commonAnnotations: {}
 # customLdifCm: my-custom-ldif-cm
 
 # Custom openldap configuration files used to override default tree
-# The supplied files MUST have the names "root.ldif" and "entries.ldif", otherwise they will be ignored.
+# The supplied files MUST have the names "root.ldif" and (optional) "entries.ldif", otherwise they will be ignored.
 # customLdifFiles:
 #   root.ldif: |-
 #     # Root creation

@@ -6,7 +6,7 @@ jobs:
       runs-on: ubuntu-latest
       steps:
       - name: Check out code
-        uses: actions/checkout@v1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Run custom action
         # Use the location in the repository (without action.yml)
         uses: ./.github/actions/setup
@@ -18,7 +18,7 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           kubectl create ns single
           kubectl -n single create secret generic my-super-secret --from-literal=LDAP_ADMIN_PASSWORD=Not@SecurePassw0rd
-          helm -n single install openldap-stack-ha -f .bin/values-singleNode.yaml .
+          helm -n single install openldap-stack-ha -f .bin/singleNode-values.yaml .
           kubectl -n single rollout status sts openldap-stack-ha
           kubectl -n single logs openldap-stack-ha-0  
       - name: verify single node deployment

@@ -78,6 +78,68 @@ spec:
       {{- if .Values.tolerations }}
       tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.tolerations "context" $) | nindent 8 }}
       {{- end }}
+      {{- if and (not .Values.global.tlsSecret) .Values.initTLScerts.enabled }}
+      initContainers:
+        - name: init-tls-certs
+          image: {{ include "openldap.initTLScertsImage" . }}
+          imagePullPolicy: {{ .Values.initTLScerts.image.pullPolicy }}
+          {{- if .Values.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.initTLScerts.resources }}
+          resources: {{- toYaml .Values.initTLScerts.resources | nindent 12 }}
+          {{- end }}
+          command:
+            - sh
+            - -c
+            - |
+              cat > /opt/init/certs/tls.cnf <<EOF
+              [req]
+              prompt = no
+              default_bits = 2048
+              distinguished_name = req_distinguished_name
+              x509_extensions = v3_ca     # For self-signed certs; use v3_req for CSRs
+              req_extensions = v3_req     # Required to add SAN to CSR
+              
+              [req_distinguished_name]
+              C = UK                      # Country (2-letter code)
+              L = London                  # City
+              CN = {{ include "global.baseDomain" . }}    # Primary domain (still required but not used for validation)
+              
+              [v3_req]
+              keyUsage = digitalSignature, keyEncipherment
+              extendedKeyUsage = serverAuth
+              subjectAltName = @alt_names  # Reference SANs below
+              
+              [v3_ca]                     # For self-signed certs; includes CA extensions
+              keyUsage = digitalSignature, keyEncipherment, keyCertSign
+              extendedKeyUsage = serverAuth
+              subjectAltName = @alt_names
+              basicConstraints = CA:TRUE   # Mark as a CA (for self-signed)
+              
+              [alt_names]
+              DNS.1 = *.{{ template "openldap.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local
+              DNS.2 = {{ template "openldap.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+          {{- if .Values.initTLScerts.extraSAN }}
+          {{- if hasKey .Values.initTLScerts.extraSAN "DNS" }}
+          {{- range $index, $san := .Values.initTLScerts.extraSAN.DNS }}
+              DNS.{{ add $index 3 }} = {{ $san }}
+          {{- end }}
+          {{- end }}
+          {{- if hasKey .Values.initTLScerts.extraSAN "IP" }}
+          {{- range $index, $san := .Values.initTLScerts.extraSAN.IP }}
+              IP.{{ add $index 1 }} = {{ $san }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+              EOF
+              openssl req -x509 -newkey rsa:4096 -noenc -config /opt/init/certs/tls.cnf -days 365 -keyout /opt/init/certs/tls.key -out /opt/init/certs/tls.crt -quiet
+              cp -pf /opt/init/certs/tls.crt /opt/init/certs/ca.crt
+              chmod 644 /opt/init/certs/*
+          volumeMounts:
+            - name: certs
+              mountPath: /opt/init/certs
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "openldap.image" . }}
@@ -167,7 +229,7 @@ spec:
               mountPath: /var/lib/ldap
             - name: passwords
               mountPath: /opt/init/passwords
-{{- if .Values.global.tlsSecret }}              
+{{- if or .Values.global.tlsSecret .Values.initTLScerts.enabled }}              
             - name: certs
               mountPath: /opt/init/certs
 {{- end }}
@@ -281,6 +343,10 @@ spec:
         - name: certs
           secret:
             secretName: {{ .Values.global.tlsSecret }}
+{{- else if .Values.initTLScerts.enabled }}
+        - name: certs
+          emptyDir:
+            medium: Memory
 {{- end }}
 {{- range .Values.customFileSets }}
         - name: {{ .name }}

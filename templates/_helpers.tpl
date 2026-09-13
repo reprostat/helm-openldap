@@ -63,8 +63,13 @@ Usage:
 {{- end -}}
 
 {{/*
-Return the proper Openldap image name
+Return the proper Openldap image names
 */}}
+
+{{- define "openldap.initTLScertsImage" -}}
+{{- include "common.images.image" (dict "imageRoot" .Values.initTLScerts.image "global" .Values.global) -}}
+{{- end -}}
+
 {{- define "openldap.image" -}}
 {{- include "common.images.image" (dict "imageRoot" .Values.image "global" .Values.global) -}}
 {{- end -}}

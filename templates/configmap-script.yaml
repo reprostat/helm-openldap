@@ -29,8 +29,12 @@ data:
 
         # Add the base tree and entries for the organization
 {{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
-        cp -pf /opt/init/base/tree.ldif /opt/ldifs/init_org_tree.ldif
-        cp -pf /opt/init/base/entries.ldif /opt/ldifs/init_org_entries.ldif
+        [[ -f /opt/init/base/tree.ldif ]] && cp -pf /opt/init/base/tree.ldif /opt/ldifs/init_org_tree.ldif
+        if [[ -f /opt/init/base/entries.ldif ]]; then
+            cp -pf /opt/init/base/entries.ldif /opt/ldifs/init_org_entries.ldif
+        else
+            echo "" > /opt/ldifs/init_org_entries.ldif
+        fi
 {{- end }}
         cp -pf /opt/init/config/init_org_ppolicy.ldif /opt/ldifs/init_org_ppolicy.ldif
     else
@@ -44,8 +48,12 @@ data:
 {{- else }}
     echo "Replication is not enabled, this is the only node"
 {{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
-    cp -pf /opt/init/base/tree.ldif /opt/ldifs/init_org_tree.ldif
-    cp -pf /opt/init/base/entries.ldif /opt/ldifs/init_org_entries.ldif
+    [[ -f /opt/init/base/tree.ldif ]] && cp -pf /opt/init/base/tree.ldif /opt/ldifs/init_org_tree.ldif
+    if [[ -f /opt/init/base/entries.ldif ]]; then
+        cp -pf /opt/init/base/entries.ldif /opt/ldifs/init_org_entries.ldif
+    else
+        echo "" > /opt/ldifs/init_org_entries.ldif
+    fi
 {{- end }}
     cp -pf /opt/init/config/init_org_ppolicy.ldif /opt/ldifs/init_org_ppolicy.ldif
 {{- end }}
