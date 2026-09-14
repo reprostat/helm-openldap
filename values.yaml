@@ -221,7 +221,7 @@ persistence:
   #  data: openldap-data
   accessModes:
     - ReadWriteOnce
-  size: 8Gi
+  size: 1Gi
   storageClass: ""
 
 ## @param extraEnvVars Array with extra environment variables to add to OPENLDAP  nodes
