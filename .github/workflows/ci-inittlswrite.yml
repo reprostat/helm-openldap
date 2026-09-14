@@ -16,8 +16,8 @@ jobs:
       shell: bash
       run: |
         cd "$GITHUB_WORKSPACE"
-        helm -n tlswrite install openldap  --create-namespace -f .bin/initTLSWrite-values.yaml .
-        kubectl -n tlswrite rollout status sts openldap
+        helm -n inittlswrite install openldap  --create-namespace -f .bin/initTLSWrite-values.yaml .
+        kubectl -n inittlswrite rollout status sts openldap
     - name: verify inittls and write deployment
       shell: bash
       run: |

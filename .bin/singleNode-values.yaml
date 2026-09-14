@@ -13,9 +13,9 @@ service:
 phpldapadmin:
   ingress:
     hosts:
-    - "phpldapadmin.example"
+    - "ldapadmin.singlenode.org"
 
 ltb-passwd:
   ingress:
     hosts:
-    - "ssl-ldap2.example"
+    - "pwd.singlenode.org"
