@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
-      uses: actions/checkout@v1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Run custom action
       # Use the location in the repository (without action.yml)
       uses: ./.github/actions/setup
@@ -15,13 +15,14 @@ jobs:
     - name: setup certs
       shell: bash
       run: |
-         kubectl apply -f $GITHUB_WORKSPACE/.bin/certificate.yaml
-    - name: deploy openldap-stack-ha
+        kubectl create ns ha
+        kubectl -n ha apply -f $GITHUB_WORKSPACE/.bin/ha-certificate.yaml
+    - name: deploy openldap (HA)
       shell: bash
       run: |
         cd "$GITHUB_WORKSPACE"
-        helm install openldap-stack-ha -f .bin/myval.yaml .
-        kubectl rollout status sts openldap-stack-ha 
+        helm -n ha install openldap -f .bin/ha-values.yaml .
+        kubectl -n ha rollout status sts openldap 
     - name: verify deployment
       shell: bash
       run: |
@@ -48,22 +49,22 @@ jobs:
     - name: fetch logs
       shell: bash
       run: |
-          echo "kubectl logs openldap-stack-ha-0"
-          kubectl logs openldap-stack-ha-0
-          echo "kubectl logs openldap-stack-ha-1"
-          kubectl logs openldap-stack-ha-1
-          echo "kubectl logs openldap-stack-ha-2"
-          kubectl logs openldap-stack-ha-2
+          echo "kubectl logs openldap-0"
+          kubectl -n ha logs openldap-0
+          echo "kubectl logs openldap-1"
+          kubectl -n ha logs openldap-1
+          echo "kubectl logs openldap-2"
+          kubectl -n ha logs openldap-2
     - name: apply chaos tests
       shell: bash
       run: |
           echo "test access to openldap database"
-          kubectl apply -f .bin/chaos.yaml
+          kubectl -n ha apply -f .bin/chaos.yaml
     - name: test write
       shell: bash
       run: |
           echo "Write test to openldap database"
-          LDAPTLS_REQCERT=never ldapadd -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -f  .bin/user.ldif
+          LDAPTLS_REQCERT=never ldapadd -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -f .bin/user.ldif
           LDAPTLS_REQCERT=never ldapsearch -o nettimeout=20 -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org' > /tmp/test-write.txt
           if ! grep  "Einstein" /tmp/test-write.txt; then echo 'no Einstein entry found' ; fi
           if ! grep  "objectClass: ownCloud" /tmp/test-write.txt; then  echo 'no ownCloud entry found'; fi

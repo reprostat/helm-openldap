@@ -29,14 +29,14 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: custom-cert
+  name: ldap-cert
 spec:
-  commonName: openldap-stack-ha.default.svc
+  commonName: openldap.ha.svc
   dnsNames:
-    - "openldap-stack-ha.default.svc"
-    - "openldap-stack-ha.default.svc.cluster.local"
-    - "*.openldap-stack-ha-headless.default.svc.cluster.local"
-  secretName: custom-cert
+    - "openldap.ha.svc"
+    - "openldap.ha.svc.cluster.local"
+    - "*.openldap-headless.ha.svc.cluster.local"
+  secretName: ldap-cert
   issuerRef:
     name: selfsigned-ca
     kind: Issuer
