@@ -12,10 +12,12 @@ service:
   
 phpldapadmin:
   ingress:
+    ingressClassName: nginx
     hosts:
     - "ldapadmin.singlenode.org"
 
 ltb-passwd:
   ingress:
+    ingressClassName: nginx
     hosts:
     - "pwd.singlenode.org"
