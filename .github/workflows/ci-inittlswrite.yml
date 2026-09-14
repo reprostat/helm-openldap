@@ -16,14 +16,14 @@ jobs:
       shell: bash
       run: |
         cd "$GITHUB_WORKSPACE"
-        helm -n tlswrite install openldap  --create-namespace -f .bin/tlswrite-values.yaml .
+        helm -n tlswrite install openldap  --create-namespace -f .bin/initTLSWrite-values.yaml .
         kubectl -n tlswrite rollout status sts openldap
     - name: verify inittls and write deployment
       shell: bash
       run: |
           echo "test access to openldap database"
           echo "Write test to openldap database"
-          LDAPTLS_REQCERT=never ldapadd -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -f .bin/tlswriteUser.ldif
+          LDAPTLS_REQCERT=never ldapadd -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -f .bin/initTLSWrite-user.ldif
           sleep 10
           LDAPTLS_REQCERT=never ldapsearch -o nettimeout=20 -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org' > /tmp/test-write.txt
           cat /tmp/test-write.txt
