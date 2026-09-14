@@ -12,15 +12,15 @@ jobs:
         uses: ./.github/actions/setup
         with:
           install-chaos: false
-      - name: deploy openldap-stack-ha-single-node
+      - name: deploy openldap-single-node
         shell: bash
         run: |
           cd "$GITHUB_WORKSPACE"
           kubectl create ns single
           kubectl -n single create secret generic my-super-secret --from-literal=LDAP_ADMIN_PASSWORD=Not@SecurePassw0rd
-          helm -n single install openldap-stack-ha -f .bin/singleNode-values.yaml .
-          kubectl -n single rollout status sts openldap-stack-ha
-          kubectl -n single logs openldap-stack-ha-0  
+          helm -n single install openldap -f .bin/singleNode-values.yaml .
+          kubectl -n single rollout status sts openldap
+          kubectl -n single logs openldap-0  
       - name: verify single node deployment
         shell: bash
         run: |

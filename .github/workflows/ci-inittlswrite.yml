@@ -1,4 +1,4 @@
-name: Test-Other
+name: Test-InitTLSWrite
 on:
   workflow_call:
 jobs:
@@ -12,13 +12,13 @@ jobs:
       uses: ./.github/actions/setup
       with:
         install-chaos: false
-    - name: deploy openldap-stack-ha-disable-ldap-port
+    - name: deploy openldap with inittls and write
       shell: bash
       run: |
         cd "$GITHUB_WORKSPACE"
-        helm -n tlswrite install openldap-stack-ha  --create-namespace -f .bin/tlswrite-values.yaml .
-        kubectl -n tlswrite rollout status sts openldap-stack-ha
-    - name: verify tlswrite deployment
+        helm -n tlswrite install openldap  --create-namespace -f .bin/tlswrite-values.yaml .
+        kubectl -n tlswrite rollout status sts openldap
+    - name: verify inittls and write deployment
       shell: bash
       run: |
           echo "test access to openldap database"
