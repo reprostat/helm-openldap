@@ -51,4 +51,6 @@ runs:
       if: ${{ inputs.install-chaos == 'true' }}
       shell: bash
       run: |
-        curl -sSL https://mirrors.chaos-mesh.org/v${{ inputs.chaos-mesh-version }}/install.sh  | bash -s -- --local kind
+        helm repo add chaos-mesh https://charts.chaos-mesh.org
+        helm repo update
+        helm --namespace chaos-testing install chaos-mesh chaos-mesh/chaos-mesh --create-namespace --version ${{ inputs.chaos-mesh-version }}
