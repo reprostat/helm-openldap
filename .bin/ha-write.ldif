@@ -1,10 +1,7 @@
 dn: uid=einstein,dc=example,dc=org
 objectClass: inetOrgPerson
-objectClass: organizationalPerson
-objectClass: ownCloud
-objectClass: person
 objectClass: posixAccount
-objectClass: top
+objectClass: ownCloud
 uid: einstein
 givenName: Albert
 sn: Einstein
@@ -17,3 +14,8 @@ gidNumber: 30000
 homeDirectory: /home/einstein
 ownCloudUUID:: NGM1MTBhZGEtYzg2Yi00ODE1LTg4MjAtNDJjZGY4MmMzZDUx
 userPassword:: e1NTSEF9TXJEcXpFNGdKbXZxbVRVTGhvWEZ1VzJBbkV3NWFLK3J3WTIvbHc9PQ==
+
+dn: cn=mygroup,dc=example,dc=org
+changetype: modify
+add: uniqueMember
+uniqueMember: uid=einstein,dc=example,dc=org

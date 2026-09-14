@@ -64,19 +64,10 @@ customLdifFiles:
 
     dn: cn=mygroup,dc=example,dc=org
     cn: mygroup
-    objectClass: groupOfNames
+    objectClass: groupOfUniqueNames
     objectClass: posixGroup
-    gidnumber: 500
-    member: uid=jdupond,dc=example,dc=org
-
-    dn: uid=test1,ou=people,dc=example,dc=org
-    objectClass: account
-    uid: test1
-
-    dn: cn=testgroup,ou=group,dc=example,dc=org
-    cn: testgroup
-    objectClass: groupOfNames
-    member: uid=test1,ou=people,dc=example,dc=org
+    gidNumber: 500
+    uniqueMember: uid=jdupond,dc=example,dc=org
 
 replication:
   writeableReplicaCount: 3
@@ -99,15 +90,7 @@ phpldapadmin:
   ldap:
     allowGuest: true
     bindDnSecretName: openldap
-  ingress:
-    ingressClassName: nginx
-    hosts:
-    - "ldapadmin.example.org"
 
 ltb-passwd:
   ldap:
     bindDnSecretName: openldap
-  ingress:
-    ingressClassName: nginx
-    hosts:
-    - "pwd.example.org"

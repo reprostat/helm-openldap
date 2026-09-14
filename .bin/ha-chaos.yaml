@@ -5,8 +5,8 @@ metadata:
   annotations:
     experiment.chaos-mesh.org/pause: "true"
 spec:
-  schedule: "@every 2m"
-  type: "PodChaos"
+  schedule: "@every 1m"
+  type: PodChaos
   historyLimit: 5
   concurrencyPolicy: Forbid
   podChaos:
@@ -15,5 +15,5 @@ spec:
     mode: random-max-percent
     selector:
       labelSelectors:
-        app.kubernetes.io/name: openldap-stack-ha
+        app.kubernetes.io/component: openldap
     value: '66' 
