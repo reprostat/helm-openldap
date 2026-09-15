@@ -2,7 +2,7 @@ global:
   ldapDomain: "example.org"
   allowConfigAccess: true
   allowAnonymousAccess: false
-  tlsSecret: ldap-tls # ldap-cert
+  tlsSecret: ldap-cert
 
 useRfc2307bisSchema: true
 
