@@ -73,6 +73,9 @@ replication:
   writeableReplicaCount: 3
   replicationMode: mirror
 
+persistence:
+  size: 250Mi
+
 service:
   type: NodePort
   ldapPortNodePort: 30389

@@ -16,7 +16,7 @@ jobs:
       shell: bash
       run: |
         kubectl create ns ha
-        kubectl -n ha apply -f $GITHUB_WORKSPACE/.bin/ha-certificate.yaml
+        kubectl -n ha apply -f .bin/ha-certificate.yaml
     - name: deploy openldap (HA)
       shell: bash
       run: |
