@@ -67,6 +67,8 @@ jobs:
       run: |
           echo "Write test to openldap database"
           LDAPTLS_REQCERT=never ldapadd -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -f .bin/ha-write.ldif
+          echo "waiting for openldap syncrepl to be ready"
+          sleep 60
           LDAPTLS_REQCERT=never ldapsearch -o nettimeout=20 -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org' > /tmp/test-write.txt
           if ! grep -q "Einstein" /tmp/test-write.txt; then echo 'no Einstein entry found' ; fi
           if [ $(grep -c "objectClass: ownCloud" /tmp/test-write.txt) -ne 2 ]; then echo 'expected two ownCloud entries'; fi
