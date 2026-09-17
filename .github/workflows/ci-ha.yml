@@ -33,6 +33,12 @@ jobs:
           kubectl -n ha logs openldap-1
           echo "kubectl logs openldap-2"
           kubectl -n ha logs openldap-2
+    - name: verify certs
+      shell: bash
+      run: |
+          echo "verify certificate"
+          echo | openssl s_client -showcerts -servername example.com -connect localhost:30636 2>/dev/null | openssl x509 -inform pem -noout -ext subjectAltName > /tmp/test-cert.txt
+          if ! grep -q "openldap.ha.svc" /tmp/test-cert.txt; then exit 1; fi
     - name: verify deployment
       shell: bash
       run: |
@@ -43,19 +49,13 @@ jobs:
     - name: test phpldapadmin access
       shell: bash
       run: |
-          echo "test access to phpldapadmin"
+          echo "test access to LDAP admin portal"
           curl -H 'Host: ldapadmin.example.org' http://local.projectcontour.io:8888 | grep 'meta name="description"'
     - name: test self service pwd access
       shell: bash
       run: |
-          echo "test access to ssp"
+          echo "test access to Self-Service Password portal"
           curl -H 'Host: pwd.example.org' http://local.projectcontour.io:8888 | grep 'div id="footer"'
-    - name: verify certs
-      shell: bash
-      run: |
-          echo "verify certificate"
-          echo | openssl s_client -showcerts -servername example.com -connect localhost:30636 2>/dev/null | openssl x509 -inform pem -noout -text > /tmp/test-cert.txt
-          if ! grep -q "CN=Self-Signed CA" /tmp/test-cert.txt; then exit 1; fi
     - name: apply chaos tests
       shell: bash
       run: |
@@ -67,7 +67,7 @@ jobs:
           echo "Write test to openldap database"
           LDAPTLS_REQCERT=never ldapadd -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -f .bin/ha-write.ldif
           LDAPTLS_REQCERT=never ldapsearch -o nettimeout=20 -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org' > /tmp/test-write.txt
-          if ! grep  "Einstein" /tmp/test-write.txt; then echo 'no Einstein entry found' ; fi
+          if ! grep -q "Einstein" /tmp/test-write.txt; then echo 'no Einstein entry found' ; fi
           if [ $(grep -c "objectClass: ownCloud" /tmp/test-write.txt) -ne 2 ]; then echo 'expected two ownCloud entries'; fi
     - name: test memberOf
       shell: bash
