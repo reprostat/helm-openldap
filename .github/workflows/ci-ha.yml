@@ -41,9 +41,10 @@ jobs:
           if ! grep -q "openldap.ha.svc" /tmp/test-cert.txt; then exit 1; fi
     - name: verify deployment
       shell: bash
-      run: |
-          echo "test access to openldap database"
-          sleep 30
+      run: |          
+          echo "waiting for openldap syncrepl to be ready"
+          sleep 60
+          echo "test access to openldap"
           LDAPTLS_REQCERT=never ldapsearch -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'cn=config' dn
           LDAPTLS_REQCERT=never ldapsearch -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org'
     - name: test phpldapadmin access
