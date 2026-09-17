@@ -59,7 +59,7 @@ jobs:
     - name: apply chaos tests
       shell: bash
       run: |
-          echo "test access to openldap database"
+          echo "apply chaos tests"
           kubectl -n ha apply -f .bin/ha-chaos.yaml
     - name: test write
       shell: bash
@@ -77,6 +77,14 @@ jobs:
           if [ $(grep "numResponses" /tmp/test-memberof.txt | cut -d ":" -f 2 | tr -d ' ') -ne 3 ]; then echo 'expected 1+2 responses' ; exit 1 ; fi
           if ! grep -q "uid=jdupond,dc=example,dc=org" /tmp/test-memberof.txt; then  echo 'expected initial member not found' ; exit 1; fi
           if ! grep -q "uid=einstein,dc=example,dc=org" /tmp/test-memberof.txt; then  echo 'expected written member not found' ; exit 1; fi
+    - name: test replication config
+      shell: bash
+      run: |
+          for ind in 0 1 2; do
+              echo "Checking replication configuration openldap-$ind..."
+              kubectl -n ha exec openldap-$ind -- ldapsearch -LL -H ldaps://openldap-$ind.openldap-headless.ha.svc.cluster.local -D uid=einstein,dc=example,dc=org -w "briefHoT" -b cn=config -s base | grep olcServerID
+              kubectl -n ha exec openldap-$ind -- ldapsearch -LL -H ldaps://openldap-$ind.openldap-headless.ha.svc.cluster.local -D uid=einstein,dc=example,dc=org -w "briefHoT" -b olcDatabase={0}config,cn=config -s base | grep -Pzo "(?s)(?<=ldaps://)[^\.]*"; echo ""
+          done
     - name: chaos tests
       shell: bash
       run: |

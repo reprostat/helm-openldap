@@ -4,6 +4,7 @@ global:
   allowAnonymousAccess: false
   tlsSecret: ldap-cert
 
+adminGroupSubDN: cn=mygroup
 useRfc2307bisSchema: true
 
 customSchemaFiles:
