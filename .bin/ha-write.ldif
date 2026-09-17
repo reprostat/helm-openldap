@@ -13,7 +13,7 @@ uidNumber: 20000
 gidNumber: 30000
 homeDirectory: /home/einstein
 ownCloudUUID:: NGM1MTBhZGEtYzg2Yi00ODE1LTg4MjAtNDJjZGY4MmMzZDUx
-userPassword:: e0FSR09OMn0kYXJnb24yaWQkdj0xOSRtPTcxNjgsdD01LHA9MSRyNk9zclFkU1hIdDEram8ySW9WZFVBJDF0WnMyRkNIVW5jaFQya25YUjdWVlJxdU40UUt3OUh5OUttMk9SODJ5cmMA 
+userPassword:: e0FSR09OMn0kYXJnb24yaWQkdj0xOSRtPTcxNjgsdD01LHA9MSRyNk9zclFkU1hIdDEram8ySW9WZFVBJDF0WnMyRkNIVW5jaFQya25YUjdWVlJxdU40UUt3OUh5OUttMk9SODJ5cmMA
 
 dn: cn=mygroup,dc=example,dc=org
 changetype: modify
