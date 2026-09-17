@@ -12,12 +12,12 @@ service:
   
 phpldapadmin:
   ingress:
-    ingressClassName: nginx
+    ingressClassName: contour
     hosts:
     - "ldapadmin.singlenode.org"
 
 ltb-passwd:
   ingress:
-    ingressClassName: nginx
+    ingressClassName: contour
     hosts:
     - "pwd.singlenode.org"

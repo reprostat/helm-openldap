@@ -93,7 +93,15 @@ phpldapadmin:
   ldap:
     allowGuest: true
     bindDnSecretName: openldap
+  ingress:
+    ingressClassName: contour
+    hosts:
+    - "ldapadmin.example.org"
 
 ltb-passwd:
   ldap:
     bindDnSecretName: openldap
+  ingress:
+    ingressClassName: contour
+    hosts:
+    - "pwd.example.org"

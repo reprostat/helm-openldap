@@ -33,22 +33,18 @@ jobs:
       shell: bash
       run: |
           echo "test access to phpldapadmin"
-          IP=$(kubectl -n ha get svc openldap-phpldapadmin  -o jsonpath='{.spec.clusterIP}')
-          echo "LDAP Admin portal IP: $IP"
-          curl "$IP":80 | grep 'meta name="description"'
+          curl -H 'Host: ldapadmin.example.org' http://local.projectcontour.io:8888 | grep 'meta name="description"'
     - name: test self service pwd access
       shell: bash
       run: |
           echo "test access to ssp"
-          IP=$(kubectl -n ha get svc openldap-ltb-passwd -o jsonpath='{.spec.clusterIP}')
-          echo "Self Service Password portal IP: $IP"
-          curl "$IP":80 | grep 'div id="footer"'
+          curl -H 'Host: pwd.example.org' http://local.projectcontour.io:8888 | grep 'div id="footer"'
     - name: verify certs
       shell: bash
       run: |
           echo "verify certificate"
           echo | openssl s_client -showcerts -servername example.com -connect localhost:30636 2>/dev/null | openssl x509 -inform pem -noout -text > /tmp/test-cert.txt
-          if ! grep -q "CN = Self-Signed CA" /tmp/test-cert.txt; then exit 1; fi
+          if ! grep -q "CN=Self-Signed CA" /tmp/test-cert.txt; then exit 1; fi
     - name: fetch logs
       shell: bash
       run: |
