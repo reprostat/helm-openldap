@@ -37,7 +37,8 @@ jobs:
       shell: bash
       run: |
           echo "test access to openldap database"
-          sleep 10
+          sleep 30
+          LDAPTLS_REQCERT=never ldapsearch -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'cn=config' dn
           LDAPTLS_REQCERT=never ldapsearch -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org'
     - name: test phpldapadmin access
       shell: bash
