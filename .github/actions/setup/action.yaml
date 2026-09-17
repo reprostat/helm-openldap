@@ -45,9 +45,10 @@ runs:
         /tmp/kind create cluster --config=.bin/setup-kind.yml --image=kindest/node:v${{ inputs.k8s-version }}
         kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
         kubectl patch daemonsets -n projectcontour envoy -p '{"spec":{"template":{"spec":{"nodeSelector":{"ingress-ready":"true"}}}}}'
+        kubectl -n projectcontour rollout status ds envoy
         kubectl -n projectcontour port-forward services/envoy 8888:80 &
         kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v${{ inputs.cert-manager-version }}/cert-manager.yaml
-        kubectl rollout status deployments -n cert-manager
+        kubectl -n cert-manager rollout status deployments
     - name: setup chaos mesh
       if: ${{ inputs.install-chaos == 'true' }}
       shell: bash
