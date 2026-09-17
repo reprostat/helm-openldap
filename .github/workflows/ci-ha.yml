@@ -22,7 +22,17 @@ jobs:
       run: |
         cd "$GITHUB_WORKSPACE"
         helm -n ha install openldap -f .bin/ha-values.yaml .
-        kubectl -n ha rollout status sts openldap 
+        kubectl -n ha rollout status sts openldap
+        kubectl -n ha wait --for=jsonpath='{.status.readyReplicas}'=3 sts openldap
+    - name: fetch logs
+      shell: bash
+      run: |
+          echo "kubectl logs openldap-0"
+          kubectl -n ha logs openldap-0
+          echo "kubectl logs openldap-1"
+          kubectl -n ha logs openldap-1
+          echo "kubectl logs openldap-2"
+          kubectl -n ha logs openldap-2
     - name: verify deployment
       shell: bash
       run: |
@@ -45,15 +55,6 @@ jobs:
           echo "verify certificate"
           echo | openssl s_client -showcerts -servername example.com -connect localhost:30636 2>/dev/null | openssl x509 -inform pem -noout -text > /tmp/test-cert.txt
           if ! grep -q "CN=Self-Signed CA" /tmp/test-cert.txt; then exit 1; fi
-    - name: fetch logs
-      shell: bash
-      run: |
-          echo "kubectl logs openldap-0"
-          kubectl -n ha logs openldap-0
-          echo "kubectl logs openldap-1"
-          kubectl -n ha logs openldap-1
-          echo "kubectl logs openldap-2"
-          kubectl -n ha logs openldap-2
     - name: apply chaos tests
       shell: bash
       run: |
