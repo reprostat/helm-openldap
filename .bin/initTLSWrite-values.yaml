@@ -1,0 +1,26 @@
+global:
+  ldapDomain: "example.org"
+
+replication:
+  writeableReplicaCount: 1
+
+service:
+  type: NodePort
+  enableLdapPort: false
+  sslLdapPortNodePort: 30636
+  
+customLdifFiles:
+  tree.ldif: |-
+    dn: ${LDAP_INIT_ORG_DN}
+    description: Example Organization Ltd
+    objectClass: top
+    objectClass: organization
+    ${LDAP_INIT_ORG_COMPUTED_ATTRS}
+
+initTLScerts:
+  enabled: true
+  extraSAN:
+    DNS: 
+      - ldap.example.org
+    IP: 
+      - 127.0.0.1

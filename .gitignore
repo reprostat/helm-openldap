@@ -1,6 +1,4 @@
-ignore/*
-ignore
-myValues.yaml
+**/sandbox/*
 
 charts/*.tgz
 Chart.lock

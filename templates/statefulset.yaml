@@ -14,7 +14,7 @@ metadata:
   annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replication.writeableReplicaCount }}
   selector:
     matchLabels: {{ include "common.labels.matchLabels" . | nindent 6 }}
       app.kubernetes.io/component: {{ template "openldap.fullname" . }}
@@ -40,106 +40,9 @@ spec:
         {{- include "common.tplvalues.render" (dict "value" .Values.podLabels "context" $) | nindent 8 }}
         {{- end }}
     spec:
+      {{- if .Values.initContainers }}
       initContainers:
-        - name: init-schema
-          image: {{ include "openldap.initSchemaImage" . }}
-          imagePullPolicy: {{ .Values.initSchema.image.pullPolicy | quote }}
-          command:
-            - sh
-            - -c
-            - |
-              host=$(hostname)
-              if [ "$host" = "{{ template "openldap.fullname" . }}-0" ]
-              then
-                echo "This is the main openldap so let's init all additional schemas and ldifs here"
-                cp -p -f /cm-schemas-acls/*.ldif /custom_config/
-                if [ -d /cm-schemas ]; then
-                  cp -p -f /cm-schemas/*.ldif /custom-schemas/
-                fi
-                if [ -d /cm-ldifs ]; then
-                  cp -p -f /cm-ldifs/*.ldif /custom-ldifs/
-                fi
-              else
-                cp -p -f /cm-schemas-acls/*.ldif /custom_config/
-                echo "let the replication takes care of everything :)"
-              fi
-            {{- if .Values.global.existingSecret }}
-              sed -i -e "s/%%CONFIG_PASSWORD%%/${LDAP_CONFIG_ADMIN_PASSWORD}/g" /custom_config/*
-              sed -i -e "s/%%ADMIN_PASSWORD%%/${LDAP_ADMIN_PASSWORD}/g" /custom_config/*
-            {{- end }}
-          {{- if .Values.containerSecurityContext.enabled }}
-          securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
-          {{- end }}
-          {{- if .Values.initTLSSecret.resources }}
-          resources: {{- toYaml .Values.initTLSSecret.resources | nindent 12 }}
-          {{- end }}
-          volumeMounts:
-    {{- if .Values.customSchemaFiles }}
-      {{- range $file := (include "openldap.customSchemaFiles" (dict "context" . ) | split ",") }}
-            - name: cm-custom-schema-files
-              mountPath: /cm-schemas/{{ $file }}.ldif
-              subPath: {{ $file }}.ldif
-      {{- end }}
-            - name: custom-schema-files
-              mountPath: /custom-schemas/
-    {{- end }}
-    {{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
-            - name: cm-custom-ldif-files
-              mountPath: /cm-ldifs/
-            - name: custom-ldif-files
-              mountPath: /custom-ldifs/
-    {{- end }}
-            - name: cm-replication-acls
-              mountPath: "/cm-schemas-acls"
-            - name: replication-acls
-              mountPath: "/custom_config"
-    {{- if .Values.global.existingSecret }}
-          envFrom:
-          - secretRef:
-              name: {{ template "openldap.secretName" . }}
-    {{- end }}
-        {{- if .Values.initContainers }}
-          {{- include "common.tplvalues.render" (dict "value" .Values.initContainers "context" $) | nindent 8 }}
-        {{- end }}
-        - name: init-tls-secret
-          image: {{ include "openldap.initTLSSecretImage" . }}
-          imagePullPolicy: {{ .Values.initTLSSecret.image.pullPolicy | quote }}
-          command:
-            - sh
-            - -c
-            - |
-              {{- if and .Values.initTLSSecret.tls_enabled .Values.global.tlsSecret }}
-              {{- else }}
-              openssl req -x509 -newkey rsa:4096 -nodes -subj '/CN={{ .Values.global.ldapDomain }}' -keyout /tmp-certs/tls.key -out /tmp-certs/tls.crt -days 365
-              chmod 777  /tmp-certs/*
-              {{- end }}
-              cp -Lr /tmp-certs/* /certs
-              [ -e /certs/ca.crt ] || cp -a /certs/tls.crt /certs/ca.crt
-          {{- if .Values.containerSecurityContext.enabled }}
-          securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
-          {{- end }}
-          {{- if .Values.initTLSSecret.resources }}
-          resources: {{- toYaml .Values.initTLSSecret.resources | nindent 12 }}
-          {{- end }}
-          volumeMounts:
-            - name: certs
-              mountPath: "/certs"
-            - name: secret-certs
-              mountPath: "/tmp-certs"
-      {{- if .Values.volumePermissions.enabled }}
-        - name: volume-permissions
-          image: {{ include "openldap.volumePermissionsImage" . }}
-          imagePullPolicy: {{ .Values.volumePermissions.image.pullPolicy | quote }}
-          command: {{- include "common.tplvalues.render" (dict "value" .Values.volumePermissions.image.command "context" $) | nindent 12 }}
-          {{- if .Values.containerSecurityContext.enabled }}
-          securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
-          {{- end }}
-          {{- if .Values.volumePermissions.resources }}
-          resources: {{- toYaml .Values.volumePermissions.resources | nindent 12 }}
-          {{- end }}
-          volumeMounts:
-            - mountPath: /bitnami
-              name: data
+        {{- include "common.tplvalues.render" (dict "value" .Values.initContainers "context" $) | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ template "openldap.serviceAccountName" . }}
       {{- include "openldap.imagePullSecrets" . | nindent 6 }}
@@ -148,11 +51,17 @@ spec:
       {{- end }}
       {{- if .Values.affinity }}
       affinity: {{- include "common.tplvalues.render" ( dict "value" .Values.affinity "context" $) | nindent 8 }}
-      {{- else }}
+      {{- else if .Values.replication.multipleNodes }}
       affinity:
-        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.podAffinityPreset "component" "openldap" "context" $) | nindent 10 }}
-        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.podAntiAffinityPreset "component" "openldap" "context" $) | nindent 10 }}
-        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.nodeAffinityPreset.type "key" .Values.nodeAffinityPreset.key "values" .Values.nodeAffinityPreset.values) | nindent 10 }}
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                      - {{ template "openldap.name" . }}
+              topologyKey: "kubernetes.io/hostname"
       {{- end }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{- include "common.tplvalues.render" ( dict "value" .Values.nodeSelector "context" $) | nindent 8 }}
@@ -169,6 +78,68 @@ spec:
       {{- if .Values.tolerations }}
       tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.tolerations "context" $) | nindent 8 }}
       {{- end }}
+      {{- if and (not .Values.global.tlsSecret) .Values.initTLScerts.enabled }}
+      initContainers:
+        - name: init-tls-certs
+          image: {{ include "openldap.initTLScertsImage" . }}
+          imagePullPolicy: {{ .Values.initTLScerts.image.pullPolicy }}
+          {{- if .Values.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.initTLScerts.resources }}
+          resources: {{- toYaml .Values.initTLScerts.resources | nindent 12 }}
+          {{- end }}
+          command:
+            - sh
+            - -c
+            - |
+              cat > /opt/init/certs/tls.cnf <<EOF
+              [req]
+              prompt = no
+              default_bits = 2048
+              distinguished_name = req_distinguished_name
+              x509_extensions = v3_ca     # For self-signed certs; use v3_req for CSRs
+              req_extensions = v3_req     # Required to add SAN to CSR
+              
+              [req_distinguished_name]
+              C = UK                      # Country (2-letter code)
+              L = London                  # City
+              CN = {{ include "global.baseDomain" . }}    # Primary domain (still required but not used for validation)
+              
+              [v3_req]
+              keyUsage = digitalSignature, keyEncipherment
+              extendedKeyUsage = serverAuth
+              subjectAltName = @alt_names  # Reference SANs below
+              
+              [v3_ca]                     # For self-signed certs; includes CA extensions
+              keyUsage = digitalSignature, keyEncipherment, keyCertSign
+              extendedKeyUsage = serverAuth
+              subjectAltName = @alt_names
+              basicConstraints = CA:TRUE   # Mark as a CA (for self-signed)
+              
+              [alt_names]
+              DNS.1 = *.{{ template "openldap.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local
+              DNS.2 = {{ template "openldap.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+          {{- if .Values.initTLScerts.extraSAN }}
+          {{- if hasKey .Values.initTLScerts.extraSAN "DNS" }}
+          {{- range $index, $san := .Values.initTLScerts.extraSAN.DNS }}
+              DNS.{{ add $index 3 }} = {{ $san }}
+          {{- end }}
+          {{- end }}
+          {{- if hasKey .Values.initTLScerts.extraSAN "IP" }}
+          {{- range $index, $san := .Values.initTLScerts.extraSAN.IP }}
+              IP.{{ add $index 1 }} = {{ $san }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+              EOF
+              openssl req -x509 -newkey rsa:4096 -noenc -config /opt/init/certs/tls.cnf -days 365 -keyout /opt/init/certs/tls.key -out /opt/init/certs/tls.crt -quiet
+              cp -pf /opt/init/certs/tls.crt /opt/init/certs/ca.crt
+              chmod 644 /opt/init/certs/*
+          volumeMounts:
+            - name: certs
+              mountPath: /opt/init/certs
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "openldap.image" . }}
@@ -183,8 +154,6 @@ spec:
           securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
           {{- end }}
           env:
-            - name: LDAP_EXTRA_SCHEMAS
-              value: {{ print .Values.initialSchema "," (include "openldap.schemaFiles" (dict "context" . )) }}
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -211,9 +180,9 @@ spec:
           {{- end }}
           ports:
             - name: ldap-port
-              containerPort: 1389
+              containerPort: 389
             - name: ssl-ldap-port
-              containerPort: 1636
+              containerPort: 636
           {{- if .Values.livenessProbe.enabled }}
           livenessProbe:
             tcpSocket:
@@ -254,25 +223,47 @@ spec:
           lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.lifecycleHooks "context" $) | nindent 12 }}
           {{- end }}
           volumeMounts:
+            - name: config
+              mountPath: /etc/ldap/slapd.d
             - name: data
-              mountPath: /bitnami/openldap/
+              mountPath: /var/lib/ldap
+            - name: passwords
+              mountPath: /opt/init/passwords
+{{- if or .Values.global.tlsSecret .Values.initTLScerts.enabled }}              
             - name: certs
-              mountPath: /opt/bitnami/openldap/certs
-            {{- range $file :=  (include "openldap.builtinSchemaFiles" (dict "context" . ) | split ",") }}
-            - name: replication-acls
-              mountPath: /opt/bitnami/openldap/etc/schema/{{ $file }}.ldif
-              subPath: {{ $file }}.ldif
-            {{- end }}
-{{- if .Values.customSchemaFiles}}
-            {{- range $file := (include "openldap.customSchemaFiles" (dict "context" . ) | split ",") }}
-            - name: custom-schema-files
-              mountPath: /opt/bitnami/openldap/etc/schema/{{ $file }}.ldif
-              subPath: {{ $file }}.ldif
-            {{- end }}
+              mountPath: /opt/init/certs
 {{- end }}
-{{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
+            - name: script
+              mountPath: /opt/init.sh
+              subPath: init.sh
+{{- if or .Values.customSchemaFiles .Values.customSchemaCm }}
+            - name: custom-schema-files
+              mountPath: /opt/init/schemas
+{{- end }}
+{{- if or .Values.customLdifFiles .Values.customLdifCm }}
             - name: custom-ldif-files
-              mountPath: /ldifs/
+              mountPath: /opt/init/base
+{{- end }}
+{{- if (gt (int .Values.replication.writeableReplicaCount) 1) }}
+            - name: replication
+              subPath: init_replication.ldif
+              mountPath: /opt/init/config/init_replication.ldif
+            - name: replication
+              subPath: init_replication_acl.ldif
+              mountPath: /opt/init/config/init_replication_acl.ldif
+{{- end }}
+            - name: ppolicy
+              subPath: ppolicy.ldif
+              mountPath: /opt/init/config/init_org_ppolicy.ldif              
+{{- if .Values.accessLog.enabled }}
+            - name: accesslog
+              subPath: init_accesslog.ldif
+              mountPath: /opt/init/config/init_accesslog.ldif
+{{- end }}
+{{- if .Values.global.allowConfigAccess }}
+            - name: logging
+              subPath: init_logging.ldif
+              mountPath: /opt/init/config/init_logging.ldif
 {{- end }}
 {{- range .Values.customFileSets }}
 {{- $fs := . }}
@@ -289,52 +280,71 @@ spec:
 {{- include "common.tplvalues.render" ( dict "value" .Values.sidecars "context" $) | nindent 8 }}
 {{- end }}
       volumes:
+        - name: passwords
+          secret:
+            secretName: {{ template "openldap.secretName" . }}
+            items:
+              - key: LDAP_ADMIN_PASSWORD
+                path: ldap-admin-password
+{{- if (gt (int (include "openldap.replicaCount" .)) 1) }}                
+              - key: LDAP_REPLICATION_PASSWORD
+                path: ldap-replication-password
+{{- end }}
 {{- if .Values.persistence.enabled }}
-{{- if .Values.persistence.existingClaim }}
+{{- if .Values.persistence.existingClaims }}
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaims.config }}
         - name: data
           persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingClaim }}
+            claimName: {{ .Values.persistence.existingClaims.data }}
 {{- end }}
 {{- end }}
-        - name: cm-replication-acls
+        - name: script
           configMap:
-            name: {{ template "openldap.fullname" . }}-replication-acls
-        - name: replication-acls
-          emptyDir:
-            medium: Memory
-
+            name: {{ template "openldap.fullname" . }}-script
+{{- if (gt (int .Values.replication.writeableReplicaCount) 1) }}
+        - name: replication
+          configMap:
+            name: {{ template "openldap.fullname" . }}-replication
+{{- end }}
 {{- if .Values.customLdifFiles }}
-        - name: cm-custom-ldif-files
+        - name: custom-ldif-files
           configMap:
             name: {{ template "openldap.fullname" . }}-customldif
-        - name: custom-ldif-files
-          emptyDir:
-            medium: Memory
 {{- else if .Values.customLdifCm }}
-        - name: cm-custom-ldif-files
+        - name: custom-ldif-files
           configMap:
             name: {{ .Values.customLdifCm }}
-        - name: custom-ldif-files
-          emptyDir:
-            medium: Memory
+{{- end }}
+        - name: ppolicy
+          configMap:
+            name: {{ template "openldap.fullname" . }}-ppolicy
+{{- if .Values.accessLog.enabled }}
+        - name: accesslog
+          configMap:
+            name: {{ template "openldap.fullname" . }}-accesslog
+{{- end }}
+{{- if .Values.global.allowConfigAccess }}
+        - name: logging
+          configMap:
+            name: {{ template "openldap.fullname" . }}-logging
 {{- end }}
 {{- if .Values.customSchemaFiles }}
-        - name: cm-custom-schema-files
+        - name: custom-schema-files
           configMap:
             name: {{ template "openldap.fullname" . }}-customschema
+{{- else if .Values.customSchemaCm }}
         - name: custom-schema-files
-          emptyDir:
-            medium: Memory
+          configMap:
+            name: {{ .Values.customSchemaCm }}
 {{- end }}
+{{- if .Values.global.tlsSecret }}
         - name: certs
-          emptyDir:
-            medium: Memory
-{{- if .Values.initTLSSecret.tls_enabled }}
-        - name: secret-certs
           secret:
             secretName: {{ .Values.global.tlsSecret }}
-{{- else }}
-        - name: secret-certs
+{{- else if .Values.initTLScerts.enabled }}
+        - name: certs
           emptyDir:
             medium: Memory
 {{- end }}
@@ -346,8 +356,29 @@ spec:
         {{- if .Values.extraVolumes }}
         {{- include "common.tplvalues.render" (dict "value" .Values.extraVolumes "context" $) | nindent 8 }}
         {{- end }}
-{{- if and (not .Values.persistence.existingClaim)  .Values.persistence.enabled }}
+{{- if and (not .Values.persistence.existingClaims)  .Values.persistence.enabled }}
   volumeClaimTemplates:
+    - metadata:
+        name: config
+        annotations:
+        {{- range $key, $value := .Values.persistence.annotations }}
+          {{ $key }}: {{ $value }}
+        {{- end }}
+      spec:
+        accessModes:
+        {{- range .Values.persistence.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: "50Mi"
+      {{- if .Values.persistence.storageClass }}
+      {{- if (eq "-" .Values.persistence.storageClass) }}
+        storageClassName: ""
+      {{- else }}
+        storageClassName: "{{ .Values.persistence.storageClass }}"
+      {{- end }}
+      {{- end }}
     - metadata:
         name: data
         annotations:
@@ -368,8 +399,10 @@ spec:
       {{- else }}
         storageClassName: "{{ .Values.persistence.storageClass }}"
       {{- end }}
-{{- end }}
+      {{- end }}
 {{- else if (not .Values.persistence.enabled) }}
+        - name: config
+          emptyDir: {}
         - name: data
           emptyDir: {}
 {{- end }}

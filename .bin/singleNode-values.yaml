@@ -1,0 +1,23 @@
+global:
+  ldapDomain: "singlenode.org"
+  existingSecret: "my-super-secret"
+
+replication:
+  writeableReplicaCount: 1
+
+service:
+  type: NodePort
+  ldapPortNodePort: 30389
+  sslLdapPortNodePort: 30636
+  
+phpldapadmin:
+  ingress:
+    ingressClassName: contour
+    hosts:
+    - "ldapadmin.singlenode.org"
+
+ltb-passwd:
+  ingress:
+    ingressClassName: contour
+    hosts:
+    - "pwd.singlenode.org"

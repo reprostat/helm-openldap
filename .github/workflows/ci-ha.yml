@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
-      uses: actions/checkout@v1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Run custom action
       # Use the location in the repository (without action.yml)
       uses: ./.github/actions/setup
@@ -15,67 +15,81 @@ jobs:
     - name: setup certs
       shell: bash
       run: |
-         kubectl apply -f $GITHUB_WORKSPACE/.bin/certificate.yaml
-    - name: deploy openldap-stack-ha
+        kubectl create ns ha
+        kubectl -n ha apply -f .bin/ha-certificate.yaml
+    - name: deploy openldap (HA)
       shell: bash
       run: |
         cd "$GITHUB_WORKSPACE"
-        helm install openldap-stack-ha -f .bin/myval.yaml .
-        kubectl rollout status sts openldap-stack-ha 
-    - name: verify deployment
+        helm -n ha install openldap -f .bin/ha-values.yaml .
+        kubectl -n ha rollout status sts openldap
+        kubectl -n ha wait --for=jsonpath='{.status.readyReplicas}'=3 sts openldap
+    - name: fetch logs
       shell: bash
       run: |
-          echo "test access to openldap database"
-          sleep 10
-          LDAPTLS_REQCERT=never ldapsearch -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org'
-    - name: test phpldapadmin access
-      shell: bash
-      run: |
-          echo "test access to phpldapadmin"
-          echo "127.0.0.1 phpldapadmin.example ssl-ldap2.example" | sudo tee -a /etc/hosts
-          curl phpldapadmin.example:8080
-    - name: test self service pwd access
-      shell: bash
-      run: |
-          echo "test access to ssp"
-          curl ssl-ldap2.example:8080
+          echo "kubectl logs openldap-0"
+          kubectl -n ha logs openldap-0
+          echo "kubectl logs openldap-1"
+          kubectl -n ha logs openldap-1
+          echo "kubectl logs openldap-2"
+          kubectl -n ha logs openldap-2
     - name: verify certs
       shell: bash
       run: |
           echo "verify certificate"
-          echo | openssl s_client -showcerts -servername example.com -connect localhost:30636 2>/dev/null | openssl x509 -inform pem -noout -text > /tmp/test-cert.txt
-          if ! grep -q "CN = Self-Signed CA" /tmp/test-cert.txt; then exit 1; fi
-    - name: fetch logs
+          echo | openssl s_client -showcerts -servername example.com -connect localhost:30636 2>/dev/null | openssl x509 -inform pem -noout -ext subjectAltName > /tmp/test-cert.txt
+          if ! grep -q "openldap.ha.svc" /tmp/test-cert.txt; then exit 1; fi
+    - name: verify deployment
+      shell: bash
+      run: |          
+          echo "waiting for openldap syncrepl to be ready"
+          sleep 60
+          echo "test access to openldap"
+          LDAPTLS_REQCERT=never ldapsearch -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'cn=config' dn
+          LDAPTLS_REQCERT=never ldapsearch -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org'
+    - name: test phpldapadmin access
       shell: bash
       run: |
-          echo "kubectl logs openldap-stack-ha-0"
-          kubectl logs openldap-stack-ha-0
-          echo "kubectl logs openldap-stack-ha-1"
-          kubectl logs openldap-stack-ha-1
-          echo "kubectl logs openldap-stack-ha-2"
-          kubectl logs openldap-stack-ha-2
+          echo "test access to LDAP admin portal"
+          curl -H 'Host: ldapadmin.example.org' http://local.projectcontour.io:8888 | grep 'meta name="description"'
+    - name: test self service pwd access
+      shell: bash
+      run: |
+          echo "test access to Self-Service Password portal"
+          curl -H 'Host: pwd.example.org' http://local.projectcontour.io:8888 | grep 'div id="footer"'
     - name: apply chaos tests
       shell: bash
       run: |
-          echo "test access to openldap database"
-          kubectl apply -f .bin/chaos.yaml
+          echo "apply chaos tests"
+          kubectl -n ha apply -f .bin/ha-chaos.yaml
     - name: test write
       shell: bash
       run: |
           echo "Write test to openldap database"
-          LDAPTLS_REQCERT=never ldapadd -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -f  .bin/user.ldif
+          LDAPTLS_REQCERT=never ldapadd -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -f .bin/ha-write.ldif
+          echo "waiting for openldap syncrepl to be ready"
+          sleep 60
           LDAPTLS_REQCERT=never ldapsearch -o nettimeout=20 -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org' > /tmp/test-write.txt
-          if ! grep  "Einstein" /tmp/test-write.txt; then echo 'no Einstein entry found' ; fi
-          if ! grep  "objectClass: ownCloud" /tmp/test-write.txt; then  echo 'no ownCloud entry found'; fi
+          if ! grep -q "Einstein" /tmp/test-write.txt; then echo 'no Einstein entry found' ; fi
+          if [ $(grep -c "objectClass: ownCloud" /tmp/test-write.txt) -ne 2 ]; then echo 'expected two ownCloud entries'; fi
     - name: test memberOf
       shell: bash
       run: |
           echo "MemberOf test to openldap database"
-          LDAPTLS_REQCERT=never ldapsearch -o nettimeout=20 -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org' "(memberOf=cn=testgroup,ou=Group,dc=example,dc=org)" > /tmp/test-write.txt
-          if [ $(grep "numResponses" /tmp/test-write.txt | cut -d ":" -f 2 | tr -d ' ') -ne 2 ]; then exit 1 ; fi
-          if ! grep -q "uid=test1,ou=People,dc=example,dc=org" /tmp/test-write.txt; then  echo exit 1; fi
+          LDAPTLS_REQCERT=never ldapsearch -o nettimeout=20 -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org' "(memberOf=cn=mygroup,dc=example,dc=org)" > /tmp/test-memberof.txt
+          if [ $(grep "numResponses" /tmp/test-memberof.txt | cut -d ":" -f 2 | tr -d ' ') -ne 3 ]; then echo 'expected 1+2 responses' ; exit 1 ; fi
+          if ! grep -q "uid=jdupond,dc=example,dc=org" /tmp/test-memberof.txt; then  echo 'expected initial member not found' ; exit 1; fi
+          if ! grep -q "uid=einstein,dc=example,dc=org" /tmp/test-memberof.txt; then  echo 'expected written member not found' ; exit 1; fi
+    - name: test replication config
+      shell: bash
+      run: |
+          for ind in 0 1 2; do
+              echo "Checking replication configuration openldap-$ind..."
+              kubectl -n ha exec openldap-$ind -- ldapsearch -LL -H ldaps://openldap-$ind.openldap-headless.ha.svc.cluster.local -D uid=einstein,dc=example,dc=org -w "briefHoT" -b cn=config -s base | grep olcServerID
+              kubectl -n ha exec openldap-$ind -- ldapsearch -LL -H ldaps://openldap-$ind.openldap-headless.ha.svc.cluster.local -D uid=einstein,dc=example,dc=org -w "briefHoT" -b olcDatabase={0}config,cn=config -s base | grep -Pzo "(?s)(?<=ldaps://)[^\.]*"; echo ""
+          done
     - name: chaos tests
       shell: bash
       run: |
           echo "test access to openldap database"
-          for i in {1..20}; do  LDAPTLS_REQCERT=never ldapsearch -o nettimeout=20 -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org' && sleep 60 ; done
+          for i in {1..20}; do  LDAPTLS_REQCERT=never ldapsearch -o nettimeout=20 -x -D 'cn=admin,dc=example,dc=org' -w Not@SecurePassw0rd -H ldaps://localhost:30636 -b 'dc=example,dc=org' && sleep 20 ; done

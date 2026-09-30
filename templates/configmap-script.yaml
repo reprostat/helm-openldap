@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "openldap.fullname" . }}-script
+  labels:
+    app: {{ template "openldap.name" . }}
+    chart: {{ template "openldap.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- if .Values.extraLabels }}
+{{ toYaml .Values.extraLabels | indent 4 }}
+{{- end }}
+data:
+  init.sh: |
+{{- if (gt (int .Values.replication.writeableReplicaCount) 1) }}
+    # Configure Mirror Node Replication
+    export LDAP_INIT_REPLICATION_SERVERID=$(($(hostname | grep -oP '(?<={{ template "openldap.fullname" . }}-)\d+')+1))
+    if [[ "$LDAP_INIT_REPLICATION_SERVERID" < "$LDAP_INIT_REPLICATION_NUMBER" ]]; then
+        export LDAP_INIT_REPLICATION_PROVIDER="ldaps://{{ template "openldap.fullname" . }}-${LDAP_INIT_REPLICATION_SERVERID}.{{ template "openldap.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local"
+    else
+        export LDAP_INIT_REPLICATION_PROVIDER="ldaps://{{ template "openldap.fullname" . }}-0.{{ template "openldap.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local"
+    fi
+    export LDAP_INIT_REPLICATION_BIND_PWD=$(</opt/init/passwords/ldap-replication-password)
+    cp -pf /opt/init/config/init_replication.ldif /opt/ldifs/init_replication_provider_config.ldif
+    cp -pf /opt/init/config/init_replication_acl.ldif /opt/ldifs/init_config_admin_access.ldif
+
+    if [[ "$LDAP_INIT_REPLICATION_SERVERID" == "1" ]]; then 
+        echo "This is the first replica, adding domain and config entries"
+
+        # Add the base tree and entries for the organization
+{{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
+        [[ -f /opt/init/base/tree.ldif ]] && cp -pf /opt/init/base/tree.ldif /opt/ldifs/init_org_tree.ldif
+        if [[ -f /opt/init/base/entries.ldif ]]; then
+            cp -pf /opt/init/base/entries.ldif /opt/ldifs/init_org_entries.ldif
+        else
+            echo "" > /opt/ldifs/init_org_entries.ldif
+        fi
+{{- end }}
+        cp -pf /opt/init/config/init_org_ppolicy.ldif /opt/ldifs/init_org_ppolicy.ldif
+    else
+        echo "This is a mirror replica, skipping domain and config entries"
+
+        echo "" > /opt/ldifs/init_org_tree.ldif
+        echo "" > /opt/ldifs/init_org_entries.ldif
+        echo "" > /opt/ldifs/init_org_ppolicy.ldif
+        echo "" > /opt/ldifs/init_replication_provider_account.ldif
+    fi
+{{- else }}
+    echo "Replication is not enabled, this is the only node"
+{{- if or (.Values.customLdifFiles) (.Values.customLdifCm) }}
+    [[ -f /opt/init/base/tree.ldif ]] && cp -pf /opt/init/base/tree.ldif /opt/ldifs/init_org_tree.ldif
+    if [[ -f /opt/init/base/entries.ldif ]]; then
+        cp -pf /opt/init/base/entries.ldif /opt/ldifs/init_org_entries.ldif
+    else
+        echo "" > /opt/ldifs/init_org_entries.ldif
+    fi
+{{- end }}
+    cp -pf /opt/init/config/init_org_ppolicy.ldif /opt/ldifs/init_org_ppolicy.ldif
+{{- end }}
+{{- if or (.Values.customSchemaFiles) (.Values.customSchemaCm) }}
+    # Custom Schema and LDIFs
+    mkdir -p /opt/ldifs/custom-schema
+    cp -rL /opt/init/schemas/*.ldif /opt/ldifs/custom-schema/
+{{- end }}
+{{- if .Values.global.allowConfigAccess }}
+    # Logging Configuration
+    mkdir -p /opt/ldifs/custom
+    cp -pf /opt/init/config/init_logging.ldif /opt/ldifs/custom/init_logging.ldif
+{{- end }}
+{{- if .Values.accessLog.enabled }}
+    # Accesslog Configuration
+    mkdir -p "$LDAP_INIT_ACCESSLOG_DATA_DIR"
+    cp -pf /opt/init/config/init_accesslog.ldif /opt/ldifs/custom/init_accesslog.ldif
+{{- end }}
