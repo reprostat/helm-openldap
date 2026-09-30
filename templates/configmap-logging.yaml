@@ -24,7 +24,7 @@ data:
     add: olcLogFileFormat
     olcLogFileFormat: {{ .Values.logging.logFormat }}
     -
-    add: olcLogLevel
+    replace: olcLogLevel
     olcLogLevel: {{ .Values.logging.logLevel }}
     -
     add: olcLogFileRotate
