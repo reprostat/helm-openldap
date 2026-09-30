@@ -6,7 +6,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 2.30.2
-    created: "2026-05-16T08:18:51.342775429Z"
+    created: "2026-09-30T13:07:36.616703278Z"
     description: A Library Helm Chart for grouping common logic between bitnami charts.
       This chart is not deployable by itself.
     digest: 37adbe3f259e25f54da4703671149957f08dcf7897088475e42a6ede646cd67e
@@ -30,8 +30,42 @@ entries:
     version: 2.30.2
   openldap-stack-ha:
   - apiVersion: v2
+    appVersion: 2.6.10
+    created: "2026-09-30T13:07:36.615946715Z"
+    dependencies:
+    - condition: ltb-passwd.enabled
+      name: ltb-passwd
+      repository: ""
+      version: 1.x.x
+    - condition: phpldapadmin.enabled
+      name: phpldapadmin
+      repository: ""
+      version: 1.x.x
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.30.x
+    description: Community developed LDAP software
+    digest: 3f3c4bcfc336d0744a07dc8ad1d4fc0ada344de687a84684ddaf73ad6fdf1e77
+    home: https://www.openldap.org
+    icon: https://raw.githubusercontent.com/reprostat/helm-openldap/main/logo.png
+    keywords:
+    - ldap
+    - openldap
+    - iam-stack
+    - high availability
+    maintainers:
+    - email: tibor.auer@gmail.com
+      name: Tibor Auer
+    name: openldap-stack-ha
+    sources:
+    - https://github.com/vegardit/docker-openldap
+    - https://github.com/reprostat/helm-openldap
+    urls:
+    - openldap-stack-ha-5.0.0.tgz
+    version: 5.0.0
+  - apiVersion: v2
     appVersion: 2.6.13
-    created: "2026-05-16T08:18:51.342067617Z"
+    created: "2026-09-30T13:07:36.613199923Z"
     dependencies:
     - condition: ltb-passwd.enabled
       name: ltb-passwd
@@ -63,4 +97,4 @@ entries:
     urls:
     - openldap-stack-ha-4.4.0.tgz
     version: 4.4.0
-generated: "2026-05-16T08:18:51.338299478Z"
+generated: "2026-09-30T13:07:36.608772181Z"
