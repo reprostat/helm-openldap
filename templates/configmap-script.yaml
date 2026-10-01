@@ -24,6 +24,8 @@ data:
     cp -pf /opt/init/config/init_replication.ldif /opt/ldifs/init_replication_provider_config.ldif
     cp -pf /opt/init/config/init_replication_acl.ldif /opt/ldifs/init_config_admin_access.ldif
 
+    cp -pf /opt/init/config/init_unique.ldif /opt/ldifs/init_module_unique.ldif
+
     if [[ "$LDAP_INIT_REPLICATION_SERVERID" == "1" ]]; then 
         echo "This is the first replica, adding domain and config entries"
 
@@ -36,14 +38,12 @@ data:
             echo "" > /opt/ldifs/init_org_entries.ldif
         fi
 {{- end }}
-        cp -pf /opt/init/config/init_unique.ldif /opt/ldifs/init_module_unique.ldif
         cp -pf /opt/init/config/init_org_ppolicy.ldif /opt/ldifs/init_org_ppolicy.ldif
     else
         echo "This is a mirror replica, skipping domain and config entries"
 
         echo "" > /opt/ldifs/init_org_tree.ldif
         echo "" > /opt/ldifs/init_org_entries.ldif
-        echo "" > /opt/ldifs/init_module_unique.ldif
         echo "" > /opt/ldifs/init_org_ppolicy.ldif
         echo "" > /opt/ldifs/init_replication_provider_account.ldif
     fi
