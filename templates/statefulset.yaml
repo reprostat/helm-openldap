@@ -252,6 +252,9 @@ spec:
               subPath: init_replication_acl.ldif
               mountPath: /opt/init/config/init_replication_acl.ldif
 {{- end }}
+            - name: unique
+              subPath: unique.ldif
+              mountPath: /opt/init/config/init_unique.ldif
             - name: ppolicy
               subPath: ppolicy.ldif
               mountPath: /opt/init/config/init_org_ppolicy.ldif              
@@ -317,6 +320,9 @@ spec:
           configMap:
             name: {{ .Values.customLdifCm }}
 {{- end }}
+        - name: unique
+          configMap:
+            name: {{ template "openldap.fullname" . }}-unique
         - name: ppolicy
           configMap:
             name: {{ template "openldap.fullname" . }}-ppolicy

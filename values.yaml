@@ -132,6 +132,15 @@ commonAnnotations: {}
 #     by self read
 #     by * none
 
+uniqueOverlay:
+  enabled: true
+  config: |-
+    olcUniqueURI: ldap:///${LDAP_INIT_ORG_DN}?cn?sub
+    olcUniqueURI: ldap:///${LDAP_INIT_ORG_DN}?uid?sub
+    olcUniqueURI: ldap:///ou=Users,${LDAP_INIT_ORG_DN}?mail?sub
+    olcUniqueURI: ldap:///ou=Users,${LDAP_INIT_ORG_DN}?gidNumber?sub
+    olcUniqueURI: ldap:///ou=Users,${LDAP_INIT_ORG_DN}?uidNumber?sub
+
 passwordPolicy:
   groupSubDN: ou=pwdpolicies
   configPPM: |-
