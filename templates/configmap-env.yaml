@@ -31,8 +31,8 @@ data:
   LDAP_INIT_PPOLICY_DEFAULT_DN: cn=default,{{ .Values.passwordPolicy.groupSubDN }},{{ include "global.baseDomain" . }}
   LDAP_PPOLICY_PPM_CONFIG: |-
     {{- .Values.passwordPolicy.configPPM | nindent 4 }}
-  LDAP_BACKUP_TIME: {{ .Values.backup.schedule }}
-  LDAP_BACKUP_FILE: {{ .Values.backup.file }}
+  LDAP_BACKUP_TIME: {{ .Values.backup.schedule | quote}}
+  LDAP_BACKUP_FILE: {{ .Values.backup.file | quote }}
 {{- if or .Values.global.tlsSecret .Values.initTLScerts.enabled }}  
   LDAP_TLS_CA_FILE: /opt/init/certs/ca.crt
   LDAP_TLS_CERT_FILE: /opt/init/certs/tls.crt

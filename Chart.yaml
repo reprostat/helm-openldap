@@ -11,7 +11,7 @@ dependencies:
     version: 2.30.x
     repository: oci://registry-1.docker.io/bitnamicharts
 home: https://www.openldap.org
-version: 5.0.1
+version: 5.0.2
 appVersion: 2.6.10
 description: Community developed LDAP software
 icon: https://raw.githubusercontent.com/reprostat/helm-openldap/main/logo.png
