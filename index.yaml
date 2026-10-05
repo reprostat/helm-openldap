@@ -6,7 +6,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 2.30.2
-    created: "2026-10-05T12:37:45.205048319Z"
+    created: "2026-10-05T13:52:46.186467725Z"
     description: A Library Helm Chart for grouping common logic between bitnami charts.
       This chart is not deployable by itself.
     digest: 37adbe3f259e25f54da4703671149957f08dcf7897088475e42a6ede646cd67e
@@ -31,7 +31,41 @@ entries:
   openldap-stack-ha:
   - apiVersion: v2
     appVersion: 2.6.10
-    created: "2026-10-05T12:37:45.204284107Z"
+    created: "2026-10-05T13:52:46.18514489Z"
+    dependencies:
+    - condition: ltb-passwd.enabled
+      name: ltb-passwd
+      repository: ""
+      version: 1.x.x
+    - condition: phpldapadmin.enabled
+      name: phpldapadmin
+      repository: ""
+      version: 1.x.x
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 2.30.x
+    description: Community developed LDAP software
+    digest: 8b66a239f1f2a697cf810afdabb7075bf54e193cda5422654bfe008c2a955d86
+    home: https://www.openldap.org
+    icon: https://raw.githubusercontent.com/reprostat/helm-openldap/main/logo.png
+    keywords:
+    - ldap
+    - openldap
+    - iam-stack
+    - high availability
+    maintainers:
+    - email: tibor.auer@gmail.com
+      name: Tibor Auer
+    name: openldap-stack-ha
+    sources:
+    - https://github.com/vegardit/docker-openldap
+    - https://github.com/reprostat/helm-openldap
+    urls:
+    - openldap-stack-ha-5.0.2.tgz
+    version: 5.0.2
+  - apiVersion: v2
+    appVersion: 2.6.10
+    created: "2026-10-05T13:52:46.179591458Z"
     dependencies:
     - condition: ltb-passwd.enabled
       name: ltb-passwd
@@ -65,7 +99,7 @@ entries:
     version: 5.0.1
   - apiVersion: v2
     appVersion: 2.6.10
-    created: "2026-10-05T12:37:45.202765236Z"
+    created: "2026-10-05T13:52:46.177034575Z"
     dependencies:
     - condition: ltb-passwd.enabled
       name: ltb-passwd
@@ -99,7 +133,7 @@ entries:
     version: 5.0.0
   - apiVersion: v2
     appVersion: 2.6.13
-    created: "2026-10-05T12:37:45.201169569Z"
+    created: "2026-10-05T13:52:46.174453337Z"
     dependencies:
     - condition: ltb-passwd.enabled
       name: ltb-passwd
@@ -131,4 +165,4 @@ entries:
     urls:
     - openldap-stack-ha-4.4.0.tgz
     version: 4.4.0
-generated: "2026-10-05T12:37:45.198471868Z"
+generated: "2026-10-05T13:52:46.171152126Z"
